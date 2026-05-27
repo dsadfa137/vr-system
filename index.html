@@ -8,12 +8,13 @@
     :root {
       --bg: #0f172a;
       --card: #1e293b;
-      --survival-color: #9333ea; /* 키오스크와 동일한 서바이벌 보라색 */
-      --vr-color: #06b6d4;       /* 키오스크와 동일한 VR 하늘색 */
+      --survival-color: #9333ea;
+      --vr-color: #06b6d4;
       --text: #f8fafc;
       --muted: #94a3b8;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    
     body {
       font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
       background: var(--bg);
@@ -26,13 +27,34 @@
 
     .header {
       background: linear-gradient(90deg, #1e293b, #0f172a);
-      padding: 15px;
+      padding: 12px;
       text-align: center;
       border-bottom: 3px solid #334155;
+      position: relative;
     }
-    .header h1 { font-size: 28px; font-weight: 900; color: #fff; letter-spacing: 1px; }
+    .header h1 { font-size: 26px; font-weight: 900; color: #fff; letter-spacing: 1px; }
 
-    /* 좌우 2분할 메인 컨테이너 */
+    /* [우측 상단] 직원 전용 모드 토글 스위치 버튼 */
+    .admin-toggle {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #334155;
+      color: #94a3b8;
+      border: 1px solid #475569;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .admin-toggle.active {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    /* 메인 2분할 레이아웃 컨테이너 */
     .split-container {
       flex: 1;
       display: flex;
@@ -42,7 +64,6 @@
       overflow: hidden;
     }
 
-    /* 구역 공통 스타일 */
     .section-zone {
       flex: 1;
       background: var(--card);
@@ -50,15 +71,14 @@
       padding: 20px;
       display: flex;
       flex-direction: column;
-      gap: 15px;
+      gap: 12px;
       box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-      transition: all 0.3s ease;
     }
     .zone-title {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 900;
       text-align: center;
-      padding: 12px;
+      padding: 10px;
       border-radius: 12px;
       color: #fff;
     }
@@ -69,65 +89,76 @@
 
     /* 대형 호출 번호 박스 */
     .number-box {
-      flex: 1.5;
+      flex: 1;
       background: rgba(15, 23, 42, 0.6);
       border-radius: 16px;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      padding: 15px;
+      padding: 10px;
     }
-    .number-box .label { font-size: 18px; font-weight: 700; color: var(--muted); margin-bottom: 5px; }
-    
-    /* 멀리서도 잘 보이도록 번호 크기 소폭 상향 조정 */
-    .number-box .num { font-size: 100px; font-weight: 900; line-height: 1.1; }
-    
-    /* 실시간 호출 시 화려한 네온 효과 */
-    .section-zone.survival .num { color: #fff; text-shadow: 0 0 25px rgba(147,51,234,0.7); }
-    .section-zone.vr .num { color: #fff; text-shadow: 0 0 25px rgba(6,182,212,0.7); }
+    .number-box .label { font-size: 16px; font-weight: 700; color: var(--muted); margin-bottom: 5px; }
+    .number-box .num { font-size: 90px; font-weight: 900; line-height: 1.1; }
+    .section-zone.survival .num { color: #fff; text-shadow: 0 0 20px rgba(147,51,234,0.6); }
+    .section-zone.vr .num { color: #fff; text-shadow: 0 0 20px rgba(6,182,212,0.6); }
 
-    /* 현황판 요약 (예약 현황) */
+    /* 예약 현황 요약 */
     .status-row {
       display: flex;
-      gap: 12px;
+      gap: 10px;
     }
     .mini-card {
       flex: 1;
       background: rgba(15, 23, 42, 0.4);
       border: 1px solid #334155;
       border-radius: 12px;
-      padding: 12px;
+      padding: 10px;
       text-align: center;
     }
-    .mini-card p { font-size: 14px; color: var(--muted); font-weight: bold; margin-bottom: 6px; }
-    .mini-card div { font-size: 32px; font-weight: 900; }
+    .mini-card p { font-size: 13px; color: var(--muted); font-weight: bold; margin-bottom: 4px; }
+    .mini-card div { font-size: 28px; font-weight: 900; }
 
-    /* 직원용 제어 리모컨 버튼 영역 (완벽 복구) */
+    /* 🕹️ 직원 전용 제어 스위치 영역 (기본 숨김 처리) */
     .control-row {
-      display: grid;
+      display: none; /* 토글 켜기 전까지 완전 숨김 */
       grid-template-columns: 2fr 1fr;
       gap: 10px;
+      animation: fadeIn 0.2s ease-in-out;
     }
     .btn {
-      border: 0; border-radius: 12px; padding: 18px 5px; font-size: 16px; font-weight: 800; cursor: pointer; color: #fff;
-      display: flex; align-items: center; justify-content: center; transition: background 0.1s;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+      border: 0; border-radius: 12px; padding: 14px 5px; font-size: 15px; font-weight: 800; cursor: pointer; color: #fff;
+      display: flex; align-items: center; justify-content: center; transition: opacity 0.1s;
     }
-    .btn:active { opacity: 0.8; transform: scale(0.98); }
+    .btn:active { opacity: 0.8; }
     .survival .btn.next { background: var(--survival-color); }
     .vr .btn.next { background: var(--vr-color); }
-    .btn.sub { background: #475569; font-size: 14px; }
+    .btn.sub { background: #475569; font-size: 13px; }
 
-    /* 모바일 세로 모드 및 스마트폰 제어 화면 최적화 */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 📱 모바일 세로 모드 대응 (짤림 현상 방지 완벽 최적화) */
     @media (max-width: 768px) {
-      .split-container { flex-direction: column; padding: 10px; gap: 10px; }
-      body { overflow-y: auto; } /* 모바일에서 버튼이 잘리지 않도록 스크롤 허용 */
-      .header h1 { font-size: 20px; }
-      .zone-title { font-size: 18px; padding: 8px; }
-      .number-box .num { font-size: 70px; }
-      .mini-card div { font-size: 24px; }
-      .btn { padding: 20px 5px; font-size: 16px; } /* 모바일에서 터치하기 쉽도록 버튼 크기 유지 */
+      body { overflow-y: auto; } /* 모바일에서 내용이 많아질 경우 안전하게 스크롤 제공 */
+      .split-container { 
+        flex-direction: column; 
+        padding: 10px; 
+        gap: 10px; 
+        overflow-y: visible;
+        flex: none;
+        height: auto;
+      }
+      .header h1 { font-size: 18px; }
+      .admin-toggle { padding: 4px 8px; font-size: 11px; }
+      .section-zone { padding: 15px; gap: 8px; flex: none; }
+      .zone-title { font-size: 16px; padding: 6px; }
+      .number-box { padding: 15px 10px; }
+      .number-box .num { font-size: 60px; }
+      .mini-card div { font-size: 22px; }
+      .btn { padding: 16px 5px; font-size: 14px; }
     }
   </style>
 </head>
@@ -135,41 +166,42 @@
 
   <header class="header">
     <h1>문경에코월드 실시간 입장 안내 시스템</h1>
+    <button class="admin-toggle" id="adminToggle" onclick="toggleAdminMode()">⚙️ 직원 제어 열기</button>
   </header>
 
   <div class="split-container">
     
-    <div class="section-zone survival" id="zoneSurvival">
+    <div class="section-zone survival">
       <div class="zone-title">💥 레이저 서바이벌</div>
       <div class="number-box">
         <div class="label">현재 호출 대기 번호</div>
         <div class="num" id="svCalledNo">000</div>
       </div>
       <div class="status-row">
-        <div class="mini-card" style="flex:1;">
+        <div class="mini-card">
           <p>금일 총 예약 건수</p>
           <div id="svLastNo" style="color: var(--survival-color);">000</div>
         </div>
       </div>
-      <div class="control-row">
+      <div class="control-row admin-controls">
         <button class="btn next" onclick="callNext('survival')">▶ 다음 번호 호출 (+1)</button>
         <button class="btn sub" onclick="callPrev('survival')">◀ 후퇴</button>
       </div>
     </div>
 
-    <div class="section-zone vr" id="zoneVr">
+    <div class="section-zone vr">
       <div class="zone-title">🤖 VR 체험존</div>
       <div class="number-box">
         <div class="label">현재 호출 대기 번호</div>
         <div class="num" id="vrCalledNo">000</div>
       </div>
       <div class="status-row">
-        <div class="mini-card" style="flex:1;">
+        <div class="mini-card">
           <p>금일 총 예약 건수</p>
           <div id="vrLastNo" style="color: var(--vr-color);">000</div>
         </div>
       </div>
-      <div class="control-row">
+      <div class="control-row admin-controls">
         <button class="btn next" onclick="callNext('vr')">▶ 다음 번호 호출 (+1)</button>
         <button class="btn sub" onclick="callPrev('vr')">◀ 후퇴</button>
       </div>
@@ -178,17 +210,8 @@
   </div>
 
   <script>
-    // 키오스크 실제 데이터베이스 Key 명칭과 연동 매핑
-    const DB_KEYS = {
-      survival: 'eco_srv_bookings', 
-      vr: 'eco_vr_bookings'         
-    };
-
-    // 직원용 호출 상태 관리 Key 명칭
-    const CALL_KEYS = {
-      survival: 'eco_survival_called_display',
-      vr: 'eco_vr_called_display'
-    };
+    const DB_KEYS = { survival: 'eco_srv_bookings', vr: 'eco_vr_bookings' };
+    const CALL_KEYS = { survival: 'eco_survival_called_display', vr: 'eco_vr_called_display' };
 
     let totalCounts = { survival: 0, vr: 0 };
     let calledNumbers = { survival: 0, vr: 0 };
@@ -196,57 +219,53 @@
     const $ = id => document.getElementById(id);
     function pad(n){ return String(n).padStart(3, '0'); }
 
+    // [핵심 추가] 직원 전용 스위치 제어 함수 (열고 닫기 토글)
+    function toggleAdminMode() {
+      const btn = $('adminToggle');
+      const controls = document.querySelectorAll('.admin-controls');
+      const isHidden = controls[0].style.display !== 'grid';
+
+      controls.forEach(el => {
+        el.style.display = isHidden ? 'grid' : 'none';
+      });
+
+      if(isHidden) {
+        btn.textContent = '🔒 제어 스위치 숨기기';
+        btn.classList.add('active');
+      } else {
+        btn.textContent = '⚙️ 직원 제어 열기';
+        btn.classList.remove('active');
+      }
+    }
+
     window.onload = function() {
-      // 초기 호출 데이터 셋팅
       if(!localStorage.getItem(CALL_KEYS.survival)) localStorage.setItem(CALL_KEYS.survival, 0);
       if(!localStorage.getItem(CALL_KEYS.vr)) localStorage.setItem(CALL_KEYS.vr, 0);
 
       loadAndSyncData();
 
-      /* [실시간 100% 상호 연동 리스너]
-        - 모바일(스마트폰)에서 버튼을 누르면 -> TV 전광판이 새창고침 없이 실시간 변동 및 TTS 방송
-        - TV 전광판 PC에서 버튼을 누르면 -> 모바일 화면의 번호도 즉시 실시간 일치 동기화
-      */
       window.addEventListener('storage', (e) => {
-        if (e.key === DB_KEYS.survival || e.key === DB_KEYS.vr) {
-          loadAndSyncData();
-        }
-        
+        if (e.key === DB_KEYS.survival || e.key === DB_KEYS.vr) loadAndSyncData();
         if (e.key === CALL_KEYS.survival) {
-          const newNum = Number(e.newValue || 0);
-          if(calledNumbers.survival !== newNum) {
-            calledNumbers.survival = newNum;
-            $('svCalledNo').textContent = pad(newNum);
-            triggerHighlight('zoneSurvival');
-            playVoice('survival', newNum);
-          }
+          calledNumbers.survival = Number(e.newValue || 0);
+          $('svCalledNo').textContent = pad(calledNumbers.survival);
         }
-        
         if (e.key === CALL_KEYS.vr) {
-          const newNum = Number(e.newValue || 0);
-          if(calledNumbers.vr !== newNum) {
-            calledNumbers.vr = newNum;
-            $('vrCalledNo').textContent = pad(newNum);
-            triggerHighlight('zoneVr');
-            playVoice('vr', newNum);
-          }
+          calledNumbers.vr = Number(e.newValue || 0);
+          $('vrCalledNo').textContent = pad(calledNumbers.vr);
         }
       });
 
-      // 0.8초 주기 초고속 상시 백업 동기화
-      setInterval(() => syncNumbersOnly(), 800);
+      setInterval(() => loadAndSyncData(), 800);
     };
 
-    // 데이터 로드 및 UI 반영
     function loadAndSyncData() {
       try {
-        const srvObj = JSON.parse(localStorage.getItem(DB_KEYS.survival) || '{}');
-        totalCounts.survival = Object.keys(srvObj).length;
+        totalCounts.survival = Object.keys(JSON.parse(localStorage.getItem(DB_KEYS.survival) || '{}')).length;
       } catch(e) { totalCounts.survival = 0; }
 
       try {
-        const vrObj = JSON.parse(localStorage.getItem(DB_KEYS.vr) || '{}');
-        totalCounts.vr = Object.keys(vrObj).length;
+        totalCounts.vr = Object.keys(JSON.parse(localStorage.getItem(DB_KEYS.vr) || '{}')).length;
       } catch(e) { totalCounts.vr = 0; }
 
       calledNumbers.survival = Number(localStorage.getItem(CALL_KEYS.survival) || 0);
@@ -258,38 +277,15 @@
       $('vrCalledNo').textContent = pad(calledNumbers.vr);
     }
 
-    // 타이머용 무음성 단순 번호 동기화 (기기 간 일치화 보장)
-    function syncNumbersOnly() {
-      const sNum = Number(localStorage.getItem(CALL_KEYS.survival) || 0);
-      const vNum = Number(localStorage.getItem(CALL_KEYS.vr) || 0);
-      
-      if(calledNumbers.survival !== sNum) {
-        calledNumbers.survival = sNum;
-        $('svCalledNo').textContent = pad(sNum);
-      }
-      if(calledNumbers.vr !== vNum) {
-        calledNumbers.vr = vNum;
-        $('vrCalledNo').textContent = pad(vNum);
-      }
-    }
-
-    // 호출 시 구역 깜빡임 이펙트
-    function triggerHighlight(zoneId) {
-      const target = $(zoneId);
-      target.style.transform = "scale(1.01)";
-      setTimeout(() => target.style.transform = "scale(1)", 300);
-    }
-
-    // 웰컴 알림음 + 한국어 고품질 TTS 안내방송
     function playVoice(type, num) {
       if (num === 0) return;
       try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let osc = audioCtx.createOscillator();
-        let gain = audioCtx.createGain();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
         osc.connect(gain); gain.connect(audioCtx.destination);
         osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
         osc.start(); osc.stop(audioCtx.currentTime + 0.15);
       } catch(e) {}
 
@@ -300,10 +296,9 @@
         utterance.lang = 'ko-KR';
         utterance.rate = 0.95;
         window.speechSynthesis.speak(utterance);
-      }, 400);
+      }, 500);
     }
 
-    // [다음 호출 버튼] - 직접 클릭 시 작동 및 스토리지 업데이트
     function callNext(type) {
       loadAndSyncData();
       let curCalled = calledNumbers[type];
@@ -314,15 +309,13 @@
         localStorage.setItem(CALL_KEYS[type], curCalled);
         calledNumbers[type] = curCalled;
         $(type === 'survival' ? 'svCalledNo' : 'vrCalledNo').textContent = pad(curCalled);
-        triggerHighlight(type === 'survival' ? 'zoneSurvival' : 'zoneVr');
         playVoice(type, curCalled);
       } else {
         const koName = (type === 'survival') ? '레이저 서바이벌' : 'VR 체험존';
-        alert(`${koName}의 예약이 없거나 마지막 번호입니다.`);
+        alert(`${koName}에 오늘 접수된 예약 건수가 없거나 마지막 번호입니다.`);
       }
     }
 
-    // [후퇴 버튼]
     function callPrev(type) {
       let curCalled = calledNumbers[type];
       if (curCalled > 0) {
@@ -332,4 +325,6 @@
         $(type === 'survival' ? 'svCalledNo' : 'vrCalledNo').textContent = pad(curCalled);
       }
     }
-  </
+  </script>
+</body>
+</html>
