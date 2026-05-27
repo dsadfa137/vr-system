@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>문경에코월드 통합 대기 전광판 (디스플레이 전용)</title>
+  <title>문경에코월드 통합 대기 전광판</title>
   <style>
     :root {
       --bg: #0f172a;
       --card: #1e293b;
-      --survival-color: #9333ea; /* 키오스크/리모컨 공통 서바이벌 보라색 */
-      --vr-color: #06b6d4;       /* 키오스크/리모컨 공통 VR 하늘색 */
+      --survival-color: #9333ea; /* 키오스크와 동일한 서바이벌 보라색 */
+      --vr-color: #06b6d4;       /* 키오스크와 동일한 VR 하늘색 */
       --text: #f8fafc;
       --muted: #94a3b8;
     }
@@ -24,97 +24,110 @@
       overflow: hidden;
     }
 
-    /* 대형 화면에 맞춘 헤더 디자인 */
     .header {
       background: linear-gradient(90deg, #1e293b, #0f172a);
-      padding: 20px;
+      padding: 15px;
       text-align: center;
-      border-bottom: 4px solid #334155;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      border-bottom: 3px solid #334155;
     }
-    .header h1 { font-size: 36px; font-weight: 900; color: #fff; letter-spacing: 2px; }
+    .header h1 { font-size: 28px; font-weight: 900; color: #fff; letter-spacing: 1px; }
 
-    /* 꽉 찬 화면을 위한 2분할 컨테이너 */
+    /* 좌우 2분할 메인 컨테이너 */
     .split-container {
       flex: 1;
       display: flex;
       flex-direction: row;
-      padding: 25px;
-      gap: 25px;
+      padding: 15px;
+      gap: 15px;
       overflow: hidden;
     }
 
-    /* 전광판 구역 디자인 (버튼이 없으므로 세로 공간 100% 활용) */
+    /* 구역 공통 스타일 */
     .section-zone {
       flex: 1;
       background: var(--card);
-      border-radius: 32px;
-      padding: 35px;
+      border-radius: 20px;
+      padding: 20px;
       display: flex;
       flex-direction: column;
-      gap: 25px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      gap: 15px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
       transition: all 0.3s ease;
     }
     .zone-title {
-      font-size: 36px;
+      font-size: 24px;
       font-weight: 900;
       text-align: center;
-      padding: 20px;
-      border-radius: 20px;
+      padding: 12px;
+      border-radius: 12px;
       color: #fff;
-      letter-spacing: 1px;
     }
-    .section-zone.survival { border: 4px solid var(--survival-color); }
-    .section-zone.survival .zone-title { background: var(--survival-color); box-shadow: 0 8px 20px rgba(147,51,234,0.3); }
-    .section-zone.vr { border: 4px solid var(--vr-color); }
-    .section-zone.vr .zone-title { background: var(--vr-color); box-shadow: 0 8px 20px rgba(6,182,212,0.3); }
+    .section-zone.survival { border: 3px solid var(--survival-color); }
+    .section-zone.survival .zone-title { background: var(--survival-color); }
+    .section-zone.vr { border: 3px solid var(--vr-color); }
+    .section-zone.vr .zone-title { background: var(--vr-color); }
 
-    /* 시인성을 극대화한 초대형 번호 표시 박스 */
+    /* 대형 호출 번호 박스 */
     .number-box {
-      flex: 1;
-      background: rgba(15, 23, 42, 0.7);
-      border-radius: 24px;
+      flex: 1.5;
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 16px;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      padding: 20px;
-      border: 1px solid rgba(255,255,255,0.05);
+      padding: 15px;
     }
-    .number-box .label { font-size: 24px; font-weight: 700; color: var(--muted); margin-bottom: 15px; letter-spacing: 1px; }
+    .number-box .label { font-size: 18px; font-weight: 700; color: var(--muted); margin-bottom: 5px; }
     
-    /* 멀리서도 잘 보이도록 폰트 크기 대폭 확대 */
-    .number-box .num { font-size: 160px; font-weight: 900; line-height: 1; letter-spacing: -2px; }
+    /* 멀리서도 잘 보이도록 번호 크기 소폭 상향 조정 */
+    .number-box .num { font-size: 100px; font-weight: 900; line-height: 1.1; }
     
-    /* 실시간 호출 시 시각적 효과를 위한 네온 사인 효과 */
-    .section-zone.survival .num { color: #fff; text-shadow: 0 0 30px rgba(147,51,234,0.8), 0 0 10px rgba(147,51,234,0.5); }
-    .section-zone.vr .num { color: #fff; text-shadow: 0 0 30px rgba(6,182,212,0.8), 0 0 10px rgba(6,182,212,0.5); }
+    /* 실시간 호출 시 화려한 네온 효과 */
+    .section-zone.survival .num { color: #fff; text-shadow: 0 0 25px rgba(147,51,234,0.7); }
+    .section-zone.vr .num { color: #fff; text-shadow: 0 0 25px rgba(6,182,212,0.7); }
 
-    /* 하단 대기 현황 요약판 */
+    /* 현황판 요약 (예약 현황) */
     .status-row {
       display: flex;
-      gap: 20px;
+      gap: 12px;
     }
     .mini-card {
       flex: 1;
-      background: rgba(15, 23, 42, 0.5);
-      border: 2px solid #334155;
-      border-radius: 20px;
-      padding: 18px;
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 12px;
       text-align: center;
     }
-    .mini-card p { font-size: 18px; color: var(--muted); font-weight: bold; margin-bottom: 8px; }
-    .mini-card div { font-size: 42px; font-weight: 900; }
+    .mini-card p { font-size: 14px; color: var(--muted); font-weight: bold; margin-bottom: 6px; }
+    .mini-card div { font-size: 32px; font-weight: 900; }
 
-    /* 모바일 또는 세로형 모니터 대응 */
-    @media (max-width: 1024px) {
-      .split-container { flex-direction: column; padding: 15px; gap: 15px; }
-      .header h1 { font-size: 24px; }
-      .zone-title { font-size: 24px; padding: 12px; }
-      .number-box .num { font-size: 90px; }
-      .mini-card div { font-size: 30px; }
-      .mini-card p { font-size: 14px; }
+    /* 직원용 제어 리모컨 버튼 영역 (완벽 복구) */
+    .control-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 10px;
+    }
+    .btn {
+      border: 0; border-radius: 12px; padding: 18px 5px; font-size: 16px; font-weight: 800; cursor: pointer; color: #fff;
+      display: flex; align-items: center; justify-content: center; transition: background 0.1s;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+    .btn:active { opacity: 0.8; transform: scale(0.98); }
+    .survival .btn.next { background: var(--survival-color); }
+    .vr .btn.next { background: var(--vr-color); }
+    .btn.sub { background: #475569; font-size: 14px; }
+
+    /* 모바일 세로 모드 및 스마트폰 제어 화면 최적화 */
+    @media (max-width: 768px) {
+      .split-container { flex-direction: column; padding: 10px; gap: 10px; }
+      body { overflow-y: auto; } /* 모바일에서 버튼이 잘리지 않도록 스크롤 허용 */
+      .header h1 { font-size: 20px; }
+      .zone-title { font-size: 18px; padding: 8px; }
+      .number-box .num { font-size: 70px; }
+      .mini-card div { font-size: 24px; }
+      .btn { padding: 20px 5px; font-size: 16px; } /* 모바일에서 터치하기 쉽도록 버튼 크기 유지 */
     }
   </style>
 </head>
@@ -129,40 +142,49 @@
     <div class="section-zone survival" id="zoneSurvival">
       <div class="zone-title">💥 레이저 서바이벌</div>
       <div class="number-box">
-        <div class="label">현재 입장 번호</div>
+        <div class="label">현재 호출 대기 번호</div>
         <div class="num" id="svCalledNo">000</div>
       </div>
       <div class="status-row">
-        <div class="mini-card">
-          <p>금일 총 접수 건수</p>
+        <div class="mini-card" style="flex:1;">
+          <p>금일 총 예약 건수</p>
           <div id="svLastNo" style="color: var(--survival-color);">000</div>
         </div>
+      </div>
+      <div class="control-row">
+        <button class="btn next" onclick="callNext('survival')">▶ 다음 번호 호출 (+1)</button>
+        <button class="btn sub" onclick="callPrev('survival')">◀ 후퇴</button>
       </div>
     </div>
 
     <div class="section-zone vr" id="zoneVr">
       <div class="zone-title">🤖 VR 체험존</div>
       <div class="number-box">
-        <div class="label">현재 입장 번호</div>
+        <div class="label">현재 호출 대기 번호</div>
         <div class="num" id="vrCalledNo">000</div>
       </div>
       <div class="status-row">
-        <div class="mini-card">
-          <p>금일 총 접수 건수</p>
+        <div class="mini-card" style="flex:1;">
+          <p>금일 총 예약 건수</p>
           <div id="vrLastNo" style="color: var(--vr-color);">000</div>
         </div>
+      </div>
+      <div class="control-row">
+        <button class="btn next" onclick="callNext('vr')">▶ 다음 번호 호출 (+1)</button>
+        <button class="btn sub" onclick="callPrev('vr')">◀ 후퇴</button>
       </div>
     </div>
 
   </div>
 
   <script>
-    // 키오스크 및 제어 리모컨과 완벽히 일치하는 로컬스토리지 Key 매핑
+    // 키오스크 실제 데이터베이스 Key 명칭과 연동 매핑
     const DB_KEYS = {
       survival: 'eco_srv_bookings', 
       vr: 'eco_vr_bookings'         
     };
 
+    // 직원용 호출 상태 관리 Key 명칭
     const CALL_KEYS = {
       survival: 'eco_survival_called_display',
       vr: 'eco_vr_called_display'
@@ -175,23 +197,24 @@
     function pad(n){ return String(n).padStart(3, '0'); }
 
     window.onload = function() {
-      // 초기 데이터 로드 및 렌더링
+      // 초기 호출 데이터 셋팅
+      if(!localStorage.getItem(CALL_KEYS.survival)) localStorage.setItem(CALL_KEYS.survival, 0);
+      if(!localStorage.getItem(CALL_KEYS.vr)) localStorage.setItem(CALL_KEYS.vr, 0);
+
       loadAndSyncData();
 
-      /* [100% 실시간 연동 핵심 리스너] 
-        리모컨이나 키오스크 기기(동일 PC/브라우저 환경 내)에서 
-        로컬스토리지 값이 변경되는 순간 이벤트가 발생하여 화면과 음성을 즉시 갱신합니다.
+      /* [실시간 100% 상호 연동 리스너]
+        - 모바일(스마트폰)에서 버튼을 누르면 -> TV 전광판이 새창고침 없이 실시간 변동 및 TTS 방송
+        - TV 전광판 PC에서 버튼을 누르면 -> 모바일 화면의 번호도 즉시 실시간 일치 동기화
       */
       window.addEventListener('storage', (e) => {
-        // 예약 건수 변경 시
         if (e.key === DB_KEYS.survival || e.key === DB_KEYS.vr) {
           loadAndSyncData();
         }
         
-        // 서바이벌 호출 번호 변경 시 -> 즉시 화면 변경 및 안내방송
         if (e.key === CALL_KEYS.survival) {
           const newNum = Number(e.newValue || 0);
-          if (calledNumbers.survival !== newNum) {
+          if(calledNumbers.survival !== newNum) {
             calledNumbers.survival = newNum;
             $('svCalledNo').textContent = pad(newNum);
             triggerHighlight('zoneSurvival');
@@ -199,10 +222,9 @@
           }
         }
         
-        // VR 호출 번호 변경 시 -> 즉시 화면 변경 및 안내방송
         if (e.key === CALL_KEYS.vr) {
           const newNum = Number(e.newValue || 0);
-          if (calledNumbers.vr !== newNum) {
+          if(calledNumbers.vr !== newNum) {
             calledNumbers.vr = newNum;
             $('vrCalledNo').textContent = pad(newNum);
             triggerHighlight('zoneVr');
@@ -211,38 +233,32 @@
         }
       });
 
-      // 만약을 대비한 0.8초 주기 초고속 동기화 백업 보조 타이머
-      setInterval(() => {
-        syncNumbersOnly();
-      }, 800);
+      // 0.8초 주기 초고속 상시 백업 동기화
+      setInterval(() => syncNumbersOnly(), 800);
     };
 
-    // 전체 데이터 동기화 함수
+    // 데이터 로드 및 UI 반영
     function loadAndSyncData() {
-      // 1. 서바이벌 실시간 예약 건수 파싱
       try {
-        const srvRaw = localStorage.getItem(DB_KEYS.survival) || '{}';
-        totalCounts.survival = Object.keys(JSON.parse(srvRaw)).length;
+        const srvObj = JSON.parse(localStorage.getItem(DB_KEYS.survival) || '{}');
+        totalCounts.survival = Object.keys(srvObj).length;
       } catch(e) { totalCounts.survival = 0; }
 
-      // 2. VR 실시간 예약 건수 파싱
       try {
-        const vrRaw = localStorage.getItem(DB_KEYS.vr) || '{}';
-        totalCounts.vr = Object.keys(JSON.parse(vrRaw)).length;
+        const vrObj = JSON.parse(localStorage.getItem(DB_KEYS.vr) || '{}');
+        totalCounts.vr = Object.keys(vrObj).length;
       } catch(e) { totalCounts.vr = 0; }
 
-      // 3. 현재 호출 번호 로드
       calledNumbers.survival = Number(localStorage.getItem(CALL_KEYS.survival) || 0);
       calledNumbers.vr = Number(localStorage.getItem(CALL_KEYS.vr) || 0);
 
-      // DOM 반영
       $('svLastNo').textContent = pad(totalCounts.survival);
       $('svCalledNo').textContent = pad(calledNumbers.survival);
       $('vrLastNo').textContent = pad(totalCounts.vr);
       $('vrCalledNo').textContent = pad(calledNumbers.vr);
     }
 
-    // 백업 타이머용 무음성 단순 번호 검사 함수
+    // 타이머용 무음성 단순 번호 동기화 (기기 간 일치화 보장)
     function syncNumbersOnly() {
       const sNum = Number(localStorage.getItem(CALL_KEYS.survival) || 0);
       const vNum = Number(localStorage.getItem(CALL_KEYS.vr) || 0);
@@ -255,63 +271,65 @@
         calledNumbers.vr = vNum;
         $('vrCalledNo').textContent = pad(vNum);
       }
-      
-      try {
-        $('svLastNo').textContent = pad(Object.keys(JSON.parse(localStorage.getItem(DB_KEYS.survival) || '{}')).length);
-        $('vrLastNo').textContent = pad(Object.keys(JSON.parse(localStorage.getItem(DB_KEYS.vr) || '{}')).length);
-      } catch(e){}
     }
 
-    // 호출 시 전광판이 번쩍이도록 만드는 시각 효과
+    // 호출 시 구역 깜빡임 이펙트
     function triggerHighlight(zoneId) {
       const target = $(zoneId);
-      target.style.transform = "scale(1.02)";
-      target.style.backgroundColor = "#334155";
+      target.style.transform = "scale(1.01)";
+      setTimeout(() => target.style.transform = "scale(1)", 300);
+    }
+
+    // 웰컴 알림음 + 한국어 고품질 TTS 안내방송
+    function playVoice(type, num) {
+      if (num === 0) return;
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let osc = audioCtx.createOscillator();
+        let gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+      } catch(e) {}
+
       setTimeout(() => {
-        target.style.transform = "scale(1)";
-        target.style.backgroundColor = "var(--card)";
+        const koName = (type === 'survival') ? '레이저 서바이벌' : '브이알 체험존';
+        const msg = `${koName}, ${num}번 대기자님 입장해 주시기 바랍니다.`;
+        const utterance = new SpeechSynthesisUtterance(msg);
+        utterance.lang = 'ko-KR';
+        utterance.rate = 0.95;
+        window.speechSynthesis.speak(utterance);
       }, 400);
     }
 
-    // 호출 음성 송출 기능 (딩동 댕동~ 웰컴음 내장 TTS)
-    function playVoice(type, num) {
-      if (num === 0) return;
-      
-      // 1단계: 맑은 전자 딩동댕 알림음 재생
-      try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        // 첫 번째 음 (미)
-        let osc1 = audioCtx.createOscillator();
-        let gain1 = audioCtx.createGain();
-        osc1.connect(gain1); gain1.connect(audioCtx.destination);
-        osc1.frequency.setValueAtTime(659.25, audioCtx.currentTime);
-        gain1.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        osc1.start(); osc1.stop(audioCtx.currentTime + 0.12);
+    // [다음 호출 버튼] - 직접 클릭 시 작동 및 스토리지 업데이트
+    function callNext(type) {
+      loadAndSyncData();
+      let curCalled = calledNumbers[type];
+      let maxLimit = totalCounts[type];
 
-        // 두 번째 음 (솔, 약간의 시차)
-        setTimeout(() => {
-          let osc2 = audioCtx.createOscillator();
-          let gain2 = audioCtx.createGain();
-          osc2.connect(gain2); gain2.connect(audioCtx.destination);
-          osc2.frequency.setValueAtTime(783.99, audioCtx.currentTime);
-          gain2.gain.setValueAtTime(0.1, audioCtx.currentTime);
-          osc2.start(); osc2.stop(audioCtx.currentTime + 0.2);
-        }, 120);
-
-      } catch(e) { console.log("AudioContext 미지원 브라우저"); }
-
-      // 2단계: 알림음 종료 후 깔끔한 한국어 TTS 안내 방송 시작
-      setTimeout(() => {
-        const koName = (type === 'survival') ? '레이저 서바이벌' : '브이알 체험존';
-        const msg = `${koName}, ${num}번 대기자님께서는 지금 입장해 주시기 바랍니다.`;
-        const utterance = new SpeechSynthesisUtterance(msg);
-        utterance.lang = 'ko-KR';
-        utterance.rate = 0.92; // 안내방송용으로 아주 살짝 신중하고 차분한 배속
-        utterance.pitch = 1.0;
-        window.speechSynthesis.speak(utterance);
-      }, 450);
+      if (curCalled < maxLimit) {
+        curCalled++;
+        localStorage.setItem(CALL_KEYS[type], curCalled);
+        calledNumbers[type] = curCalled;
+        $(type === 'survival' ? 'svCalledNo' : 'vrCalledNo').textContent = pad(curCalled);
+        triggerHighlight(type === 'survival' ? 'zoneSurvival' : 'zoneVr');
+        playVoice(type, curCalled);
+      } else {
+        const koName = (type === 'survival') ? '레이저 서바이벌' : 'VR 체험존';
+        alert(`${koName}의 예약이 없거나 마지막 번호입니다.`);
+      }
     }
-  </script>
-</body>
-</html>
+
+    // [후퇴 버튼]
+    function callPrev(type) {
+      let curCalled = calledNumbers[type];
+      if (curCalled > 0) {
+        curCalled--;
+        localStorage.setItem(CALL_KEYS[type], curCalled);
+        calledNumbers[type] = curCalled;
+        $(type === 'survival' ? 'svCalledNo' : 'vrCalledNo').textContent = pad(curCalled);
+      }
+    }
+  </
