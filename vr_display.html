@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VR 체험존 순번 대기 전광판 및 리모컨</title>
+  <style>
+    :root {
+      --bg: #0f172a; /* 전광판 느낌의 고급스러운 어두운 배경 */
+      --card: #1e293b;
+      --primary: #06b6d4; /* VR 테마 컬러 */
+      --accent: #10b981;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    /* 상단 타이틀 구조 */
+    .header {
+      background: linear-gradient(90deg, #1e293b, #0f172a);
+      padding: 20px;
+      text-align: center;
+      border-bottom: 4px solid var(--primary);
+    }
+    .header h1 { font-size: 38px; font-weight: 900; color: var(--primary); letter-spacing: 2px; }
+
+    /* 메인 전광판 영역 (TV 화면용) */
+    .display-container {
+      flex: 1;
+      display: flex;
+      flex-direction: row;
+      padding: 30px;
+      gap: 30px;
+    }
+
+    /* 현재 호출 번호 (가장 크게 강조) */
+    .main-call-box {
+      flex: 2;
+      background: var(--card);
+      border-radius: 24px;
+      border: 2px solid #334155;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+    .main-call-box .title { font-size: 40px; font-weight: 800; color: var(--muted); margin-bottom: 10px; }
+    .main-call-box .number { font-size: 180px; font-weight: 900; color: #fff; text-shadow: 0 0 30px rgba(6,182,212,0.6); }
+    .main-call-box .status-text { font-size: 28px; font-weight: bold; color: var(--accent); background: rgba(16,185,129,0.1); padding: 10px 30px; border-radius: 50px; }
+
+    /* 서브 현황 (총 발권 및 대기 인원 현황) */
+    .side-status-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .status-card {
+      flex: 1;
+      background: var(--card);
+      border-radius: 20px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border: 2px solid #334155;
+    }
+    .status-card h3 { font-size: 24px; color: var(--muted); margin-bottom: 15px; }
+    .status-card .val { font-size: 70px; font-weight: 900; color: var(--primary); }
+
+    /* 하단 직원용 모바일 리모컨 패널 (기본 숨김 모드 전환 가능) */
+    .remote-panel {
+      background: #1e293b;
+      border-top: 4px solid #475569;
+      padding: 20px;
+    }
+    .remote-title { font-size: 18px; font-weight: bold; color: var(--primary); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+    .btn-toggle-remote { background: transparent; border: 0; color: var(--muted); cursor: pointer; font-size: 14px; }
+    
+    .remote-controls {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr;
+      gap: 15px;
+    }
+    .btn-remote {
+      border: 0; border-radius: 14px; padding: 18px; font-size: 20px; font-weight: 800; cursor: pointer; color: #fff;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: transform 0.1s;
+    }
+    .btn-remote:active { transform: scale(0.97); }
+    .btn-remote.next { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+    .btn-remote.prev { background: #475569; }
+    .btn-remote.recall { background: #10b981; }
+
+    /* 대형 스크린 최적화 반응형 */
+    @media (max-width: 900px) {
+      .display-container { flex-direction: column; }
+      .main-call-box .number { font-size: 120px; }
+      .remote-controls { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <h1>VR 체험존 실시간 입장 순서 안내</h1>
+  </header>
+
+  <div class="display-container">
+    <div class="main-call-box">
+      <div class="title">지 금  입 장 하 실  번 호</div>
+      <div class="number" id="tvCalledNo">000</div>
+      <div class="status-text" id="tvStatusMsg">🔔 지정 스피커 볼륨을 높여주세요</div>
+    </div>
+
+    <div class="side-status-box">
+      <div class="status-card">
+        <h3>오늘 발권된 총 번호</h3>
+        <div class="val" id="tvLastNo">000</div>
+      </div>
+      <div class="status-card">
+        <h3>현재 대기 중인 인원</h3>
+        <div class="val" id="tvWaitCount" style="color: #f59e0b;">0 명</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="remote-panel" id="remoteControllerBox">
+    <div class="remote-title">
+      <span>🕹️ 직원 전용 스마트 무선 리모컨 컨트롤러</span>
+      <button class="btn-toggle-remote" onclick="toggleTvMode()">🖥️ TV 모드 전환 (컨트롤러 숨기기/열기)</button>
+    </div>
+    <div class="remote-controls">
+      <button class="btn-remote next" onclick="callNextNumber()">▶ 다음 고객 호출 (번호 +1 및 딩동음)</button>
+      <button class="btn-remote recall" onclick="reVoiceSignal()">🔄 재호출 (음성 재송출)</button>
+      <button class="btn-remote prev" onclick="callPrevNumber()">◀ 이전 번호로 후퇴</button>
+    </div>
+  </div>
+
+  <script>
+    let lastNo = 0;
+    let calledNo = 0;
+
+    const $ = id => document.getElementById(id);
+    function pad(n){ return String(n).padStart(3, '0'); }
+
+    window.onload = function() {
+      syncData();
+      // 다른 창(키오스크 발권 등)에서 데이터가 변경되면 실시간으로 TV 화면 감지 및 업데이트
+      window.addEventListener('storage', (e) => {
+        if(e.key === 'eco_vr_last' || e.key === 'eco_vr_called') {
+          syncData(true); // 외부 원인 변경 시 소리 알림 연동
+        }
+      });
+      
+      // 주기적으로 로컬 저장소 동기화 (폴링 체크 메커니즘)
+      setInterval(() => syncData(false), 1000);
+    };
+
+    // 로컬 데이터 동기화 함수
+    function syncData(triggerVoice = false) {
+      const currentLast = Number(localStorage.getItem('eco_vr_last') || 0);
+      const currentCalled = Number(localStorage.getItem('eco_vr_called') || 0);
+
+      // 번호가 실제로 변경되었을 때만 전광판 갱신 및 음성 출력 조건 발동
+      if (currentCalled !== calledNo && calledNo !== 0 && triggerVoice) {
+        calledNo = currentCalled;
+        lastNo = currentLast;
+        updateDom();
+        playVoiceAlert();
+      } else {
+        lastNo = currentLast;
+        calledNo = currentCalled;
+        updateDom();
+      }
+    }
+
+    function updateDom() {
+      $('tvLastNo').textContent = pad(lastNo);
+      $('tvCalledNo').textContent = pad(calledNo);
+      
+      let waitCount = lastNo - calledNo;
+      if (waitCount < 0) waitCount = 0;
+      $('tvWaitCount').textContent = waitCount + " 명";
+
+      if(calledNo === 0) {
+        $('tvStatusMsg').textContent = "대기 시 발권기에서 번호표를 뽑아주세요";
+      } else {
+        $('tvStatusMsg').textContent = "📢 차례가 되신 분은 내부로 입장해 주세요";
+      }
+    }
+
+    // 딩동~ 소리 및 음성 호출 안내 엔진 (웹 표준 SpeechSynthesis TTS 가동)
+    function playVoiceAlert() {
+      if (calledNo === 0) return;
+      
+      // 브라우저 기본 오디오 비프음 생성 (효과음 파일 대체 가능)
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(587.33, audioCtx.currentTime); // 레
+        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.15);
+        
+        setTimeout(() => {
+          const osc2 = audioCtx.createOscillator();
+          osc2.connect(gainNode);
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(659.25, audioCtx.currentTime); // 미
+          osc2.start();
+          osc2.stop(audioCtx.currentTime + 0.3);
+        }, 150);
+      } catch(e) { console.log("AudioContext 차단 우회 대기"); }
+
+      // 딩동 효과음 직후 한국어 멘트 TTS 안내 방송 송출
+      setTimeout(() => {
+        const msgText = `브이알 체험, ${calledNo}번 대기자님 입장해 주시기 바랍니다.`;
+        const utterance = new SpeechSynthesisUtterance(msgText);
+        utterance.lang = 'ko-KR';
+        utterance.rate = 0.95; // 안내 방송에 적합한 신중하고 차분한 속도
+        window.speechSynthesis.speak(utterance);
+      }, 600);
+    }
+
+    /* ================= [직원용 무선 리모컨 제어 모듈] ================= */
+    function callNextNumber() {
+      if (calledNo < lastNo) {
+        calledNo++;
+        localStorage.setItem('eco_vr_called', calledNo);
+        updateDom();
+        playVoiceAlert();
+      } else {
+        alert("현재 발권된 대기 번호표가 없거나 마지막 번호입니다.");
+      }
+    }
+
+    function callPrevNumber() {
+      if (calledNo > 0) {
+        calledNo--;
+        localStorage.setItem('eco_vr_called', calledNo);
+        updateDom();
+      }
+    }
+
+    function reVoiceSignal() {
+      playVoiceAlert();
+    }
+
+    // TV에 상시 띄워둘 때는 하단 제어창을 숨기는 토글 스위치
+    function toggleTvMode() {
+      const panel = $('remoteControllerBox');
+      if(panel.style.display === 'none') {
+        panel.style.display = 'block';
+      } else {
+        panel.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>
