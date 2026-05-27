@@ -3,12 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>VR 체험존 순번 대기 전광판 및 리모컨</title>
+  <title>문경에코월드 통합 대기 전광판</title>
   <style>
     :root {
-      --bg: #0f172a; /* 전광판 느낌의 고급스러운 어두운 배경 */
+      --bg: #0f172a;
       --card: #1e293b;
-      --primary: #06b6d4; /* VR 테마 컬러 */
+      --primary: #06b6d4; /* VR 테마 */
+      --survival: #a855f7; /* 서바이벌 테마 (보라색 계열 반영) */
       --accent: #10b981;
       --text: #f8fafc;
       --muted: #94a3b8;
@@ -21,127 +22,97 @@
       display: flex;
       flex-direction: column;
       height: 100vh;
-      height: -webkit-fill-available; /* 모바일 브라우저 상하단 바 주소창 높이 대응 */
+      height: -webkit-fill-available;
       overflow: hidden;
     }
 
-    /* 상단 타이틀 구조 */
-    .header {
-      background: linear-gradient(90deg, #1e293b, #0f172a);
-      padding: 15px;
-      text-align: center;
+    /* 상단 대형 탭 메뉴 (시설 전환용) */
+    .facility-tabs {
+      display: flex;
+      background: #1e293b;
       border-bottom: 4px solid var(--primary);
     }
-    .header h1 { font-size: 32px; font-weight: 900; color: var(--primary); letter-spacing: 2px; }
+    .tab-btn {
+      flex: 1; padding: 18px; font-size: 20px; font-weight: 900; border: 0; background: #1e293b; color: var(--muted); cursor: pointer; transition: all 0.2s; text-align: center;
+    }
+    .tab-btn.active.survival {
+      background: var(--survival); color: #fff;
+    }
+    .tab-btn.active.vr {
+      background: var(--primary); color: #fff;
+    }
 
-    /* 메인 전광판 영역 (TV 화면용) */
+    /* 메인 전광판 영역 */
     .display-container {
-      flex: 1;
-      display: flex;
-      flex-direction: row;
-      padding: 20px;
-      gap: 20px;
-      overflow: hidden;
+      flex: 1; display: flex; flex-direction: row; padding: 20px; gap: 20px; overflow: hidden;
     }
 
-    /* 현재 호출 번호 (가장 크게 강조) */
     .main-call-box {
-      flex: 2;
-      background: var(--card);
-      border-radius: 24px;
-      border: 2px solid #334155;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-      padding: 10px;
+      flex: 2; background: var(--card); border-radius: 24px; border: 2px solid #334155; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); padding: 10px;
     }
-    .main-call-box .title { font-size: 32px; font-weight: 800; color: var(--muted); margin-bottom: 10px; }
-    .main-call-box .number { font-size: 140px; font-weight: 900; color: #fff; text-shadow: 0 0 30px rgba(6,182,212,0.6); line-height: 1.2; }
-    .main-call-box .status-text { font-size: 24px; font-weight: bold; color: var(--accent); background: rgba(16,185,129,0.1); padding: 8px 25px; border-radius: 50px; text-align: center; }
+    .main-call-box .title { font-size: 28px; font-weight: 800; color: var(--muted); margin-bottom: 5px; }
+    .main-call-box .number { font-size: 130px; font-weight: 900; color: #fff; text-shadow: 0 0 30px rgba(6,182,212,0.5); line-height: 1.2; }
+    .main-call-box .status-text { font-size: 22px; font-weight: bold; color: var(--accent); background: rgba(16,185,129,0.1); padding: 8px 25px; border-radius: 50px; text-align: center; }
 
-    /* 서브 현황 (총 발권 및 대기 인원 현황) */
     .side-status-box {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
+      flex: 1; display: flex; flex-direction: column; gap: 15px;
     }
     .status-card {
-      flex: 1;
-      background: var(--card);
-      border-radius: 20px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      border: 2px solid #334155;
+      flex: 1; background: var(--card); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 2px solid #334155;
     }
-    .status-card h3 { font-size: 20px; color: var(--muted); margin-bottom: 10px; text-align: center; }
-    .status-card .val { font-size: 55px; font-weight: 900; color: var(--primary); }
+    .status-card h3 { font-size: 18px; color: var(--muted); margin-bottom: 8px; text-align: center; }
+    .status-card .val { font-size: 50px; font-weight: 900; color: var(--primary); }
 
-    /* 하단 직원용 모바일 리모컨 패널 */
+    /* 리모컨 컨트롤러 상단 고정 바 */
     .remote-panel {
-      background: #1e293b;
-      border-top: 4px solid #475569;
-      padding: 15px;
-      padding-bottom: calc(15px + env(safe-area-inset-bottom)); /* 모바일 하단 소프트바 여백 대응 */
+      background: #1e293b; border-top: 4px solid #475569; padding: 15px; padding-bottom: calc(15px + env(safe-area-inset-bottom));
     }
     .remote-title { font-size: 14px; font-weight: bold; color: var(--primary); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-    .btn-toggle-remote { background: transparent; border: 0; color: var(--muted); cursor: pointer; font-size: 12px; }
     
     .remote-controls {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr;
-      gap: 12px;
+      display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px;
     }
     .btn-remote {
-      border: 0; border-radius: 12px; padding: 16px 10px; font-size: 16px; font-weight: 800; cursor: pointer; color: #fff;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: transform 0.1s;
-      display: flex; align-items: center; justify-content: center; text-align: center;
+      border: 0; border-radius: 12px; padding: 16px 10px; font-size: 16px; font-weight: 800; cursor: pointer; color: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;
     }
-    .btn-remote:active { transform: scale(0.97); }
     .btn-remote.next { background: linear-gradient(135deg, #06b6d4, #0891b2); }
     .btn-remote.prev { background: #475569; }
     .btn-remote.recall { background: #10b981; }
 
-    /* 스마트폰 (모바일 세로 화면) 최적화 - 짤림 방지 핵심 처리 */
+    /* 모바일 세로 화면 대응 (짤림 절대 방지) */
     @media (max-width: 768px) {
-      .header { padding: 10px; }
-      .header h1 { font-size: 22px; letter-spacing: 1px; }
+      .tab-btn { padding: 12px; font-size: 16px; }
       .display-container { flex-direction: column; padding: 12px; gap: 12px; }
-      .main-call-box { flex: 1.8; padding: 12px; }
-      .main-call-box .title { font-size: 20px; }
-      .main-call-box .number { font-size: 90px; }
-      .main-call-box .status-text { font-size: 15px; padding: 6px 15px; }
+      .main-call-box { flex: 1.6; }
+      .main-call-box .title { font-size: 18px; }
+      .main-call-box .number { font-size: 80px; }
+      .main-call-box .status-text { font-size: 14px; padding: 5px 12px; }
       .side-status-box { flex: 1; flex-direction: row; gap: 10px; }
-      .status-card { padding: 10px; }
-      .status-card h3 { font-size: 13px; margin-bottom: 5px; }
-      .status-card .val { font-size: 36px; }
-      .remote-panel { padding: 12px; }
-      .remote-controls { grid-template-columns: 1fr; gap: 8px; } /* 모바일에선 버튼을 세로로 배치해 터치 영역 확보 */
+      .status-card { padding: 8px; }
+      .status-card h3 { font-size: 12px; margin-bottom: 4px; }
+      .status-card .val { font-size: 32px; }
+      .remote-controls { grid-template-columns: 1fr; gap: 8px; }
       .btn-remote { padding: 12px; font-size: 15px; }
     }
   </style>
 </head>
 <body>
 
-  <header class="header">
-    <h1>VR 체험존 실시간 입장 순서 안내</h1>
-  </header>
+  <nav class="facility-tabs" id="tabBar">
+    <button class="tab-btn active survival" onclick="switchFacility('survival')">💥 레이저 서바이벌</button>
+    <button class="tab-btn vr" onclick="switchFacility('vr')">🽳 VR 체험존</button>
+  </nav>
 
   <div class="display-container">
     <div class="main-call-box">
-      <div class="title">지 금  입 장 하 실  번 호</div>
+      <div class="title" id="tvTitle">서바이벌 입장 하실 번호</div>
       <div class="number" id="tvCalledNo">000</div>
-      <div class="status-text" id="tvStatusMsg">🔔 지정 스피커 볼륨을 높여주세요</div>
+      <div class="status-text" id="tvStatusMsg">📢 차례가 되신 분은 내부로 입장해 주세요</div>
     </div>
 
     <div class="side-status-box">
       <div class="status-card">
-        <h3>오늘 발권 총 번호</h3>
+        <h3 id="labelLastNo">서바이벌 금일 예약 건수</h3>
         <div class="val" id="tvLastNo">000</div>
       </div>
       <div class="status-card">
@@ -151,19 +122,25 @@
     </div>
   </div>
 
-  <div class="remote-panel" id="remoteControllerBox">
+  <div class="remote-panel">
     <div class="remote-title">
-      <span>🕹️ 직원 전용 스마트 무선 리모컨 컨트롤러</span>
-      <button class="btn-toggle-remote" onclick="toggleTvMode()">🖥️ TV 모드 전환 (컨트롤러 숨기기/열기)</button>
+      <span id="remotePanelLabel">🕹️ 직원 전용 스마트 리모컨 (현재: 서바이벌)</span>
     </div>
     <div class="remote-controls">
-      <button class="btn-remote next" onclick="callNextNumber()">▶ 다음 고객 호출 (번호 +1 및 딩동음)</button>
+      <button class="btn-remote next" id="btnNext" onclick="callNextNumber()">▶ 다음 고객 호출 (번호 +1)</button>
       <button class="btn-remote recall" onclick="reVoiceSignal()">🔄 재호출 (음성 재송출)</button>
-      <button class="btn-remote prev" onclick="callPrevNumber()">◀ 이전 번호로 후퇴</button>
+      <button class="btn-remote prev" onclick="callPrevNumber()">◀ 이전 번호 후퇴</button>
     </div>
   </div>
 
   <script>
+    // 키오스크 시스템 저장소의 두 시설 Key값 선언
+    const KEYS = {
+      survival: { last: 'eco_survival_last', called: 'eco_survival_called', name: '레이저 서바이벌', color: '#a855f7' },
+      vr: { last: 'eco_vr_last', called: 'eco_vr_called', name: '브이알 체험', color: '#06b6d4' }
+    };
+
+    let currentFacility = 'survival'; // 기본 실행 화면은 서바이벌
     let lastNo = 0;
     let calledNo = 0;
 
@@ -173,16 +150,43 @@
     window.onload = function() {
       syncData();
       window.addEventListener('storage', (e) => {
-        if(e.key === 'eco_vr_last' || e.key === 'eco_vr_called') {
+        const k = KEYS[currentFacility];
+        if(e.key === k.last || e.key === k.called) {
           syncData(true);
         }
       });
-      setInterval(() => syncData(false), 1000);
+      setInterval(() => syncData(false), 800);
     };
 
+    // 시설 전환 처리 함수
+    function switchFacility(type) {
+      currentFacility = type;
+      
+      // 상단 바 색상 및 활성화 클래스 스위칭
+      const tabs = document.querySelectorAll('.tab-btn');
+      tabs[0].classList.remove('active');
+      tabs[1].classList.remove('active');
+      
+      if(type === 'survival') {
+        tabs[0].classList.add('active');
+        $('tabBar').style.borderBottomColor = KEYS.survival.color;
+        $('btnNext').style.background = 'linear-gradient(135deg, #a855f7, #9333ea)';
+        $('remotePanelLabel').textContent = `🕹️ 직원 전용 스마트 리모컨 (현재: 서바이벌)`;
+      } else {
+        tabs[1].classList.add('active');
+        $('tabBar').style.borderBottomColor = KEYS.vr.color;
+        $('btnNext').style.background = 'linear-gradient(135deg, #06b6d4, #0891b2)';
+        $('remotePanelLabel').textContent = `🕹️ 직원 전용 스마트 리모컨 (현재: VR체험)`;
+      }
+      
+      syncData(false);
+    }
+
+    // 실시간 동기화 데이터베이스 핸들링
     function syncData(triggerVoice = false) {
-      const currentLast = Number(localStorage.getItem('eco_vr_last') || 0);
-      const currentCalled = Number(localStorage.getItem('eco_vr_called') || 0);
+      const k = KEYS[currentFacility];
+      const currentLast = Number(localStorage.getItem(k.last) || 0);
+      const currentCalled = Number(localStorage.getItem(k.called) || 0);
 
       if (currentCalled !== calledNo && calledNo !== 0 && triggerVoice) {
         calledNo = currentCalled;
@@ -197,6 +201,10 @@
     }
 
     function updateDom() {
+      const k = KEYS[currentFacility];
+      $('tvTitle').textContent = `${k.name} 입장 하실 번호`;
+      $('labelLastNo').textContent = `${k.name === '브이알 체험' ? 'VR' : '서바이벌'} 금일 예약 건수`;
+      
       $('tvLastNo').textContent = pad(lastNo);
       $('tvCalledNo').textContent = pad(calledNo);
       
@@ -204,13 +212,11 @@
       if (waitCount < 0) waitCount = 0;
       $('tvWaitCount').textContent = waitCount + " 명";
 
-      if(calledNo === 0) {
-        $('tvStatusMsg').textContent = "대기 시 발권기에서 번호표를 뽑아주세요";
-      } else {
-        $('tvStatusMsg').textContent = "📢 차례가 되신 분은 내부로 입장해 주세요";
-      }
+      // 테마 컬러 매칭 효과
+      $('tvCalledNo').style.textShadow = `0 0 30px ${k.color}80`;
     }
 
+    // 방송 오디오 생성 장치
     function playVoiceAlert() {
       if (calledNo === 0) return;
       try {
@@ -236,7 +242,8 @@
       } catch(e) {}
 
       setTimeout(() => {
-        const msgText = `브이알 체험, ${calledNo}번 대기자님 입장해 주시기 바랍니다.`;
+        const k = KEYS[currentFacility];
+        const msgText = `${k.name}, ${calledNo}번 대기자님 입장해 주시기 바랍니다.`;
         const utterance = new SpeechSynthesisUtterance(msgText);
         utterance.lang = 'ko-KR';
         utterance.rate = 0.95;
@@ -245,31 +252,28 @@
     }
 
     function callNextNumber() {
+      const k = KEYS[currentFacility];
       if (calledNo < lastNo) {
         calledNo++;
-        localStorage.setItem('eco_vr_called', calledNo);
+        localStorage.setItem(k.called, calledNo);
         updateDom();
         playVoiceAlert();
       } else {
-        alert("현재 발권된 대기 번호표가 없거나 마지막 번호입니다.");
+        alert(`현재 발권된 ${k.name} 대기 번호표가 없거나 마지막 번호입니다.`);
       }
     }
 
     function callPrevNumber() {
+      const k = KEYS[currentFacility];
       if (calledNo > 0) {
         calledNo--;
-        localStorage.setItem('eco_vr_called', calledNo);
+        localStorage.setItem(k.called, calledNo);
         updateDom();
       }
     }
 
     function reVoiceSignal() {
       playVoiceAlert();
-    }
-
-    function toggleTvMode() {
-      const panel = $('remoteControllerBox');
-      panel.style.display = (panel.style.display === 'none') ? 'block' : 'none';
     }
   </script>
 </body>
