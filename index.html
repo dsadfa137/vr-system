@@ -164,6 +164,49 @@
 
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+  <script type="module">
+  // 1. 필요한 Firebase 기능 불러오기
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+  // 2. 내 Firebase 프로젝트 키값 설정 (보내주신 스크린샷 기준 주소입니다)
+  const firebaseConfig = {
+    apiKey: "AIzaSyDeKWmVbxfvO9SKjJXYCkuJrz630u6pxsk",
+    authDomain: "mungyeong-kiosk.firebaseapp.com",
+    databaseURL: "https://mungyeong-kiosk-default-rtdb.firebaseio.com",
+    projectId: "mungyeong-kiosk",
+    storageBucket: "mungyeong-kiosk.firebasestorage.app",
+    messagingSenderId: "1020366726033",
+    appId: "1:1020366726033:web:04fc7e0638d1d0e40c3030",
+    measurementId: "G-8GSFNWLX5Q"
+  };
+
+  // 3. Firebase 초기화 및 연결
+  const app = initializeApp(firebaseConfig);
+  const database = getDatabase(app);
+
+  // --- [A] 키오스크 파일(kiosk_final.html)에 들어갈 로직 ---
+  // 예약 버튼이 눌렸을 때 데이터베이스에 숫자를 저장하는 예시입니다.
+  // (실제 버튼 ID나 변수명에 맞게 매칭이 필요할 수 있습니다)
+  function uploadReservation(type, count) {
+    set(ref(database, 'reservations/' + type), {
+      count: count
+    });
+  }
+
+  // --- [B] 전광판 파일에 들어갈 로직 ---
+  // Firebase에 저장된 데이터가 바뀌면 전광판 화면도 실시간으로 자동으로 바뀝니다.
+  const vrCountRef = ref(database, 'reservations/vr');
+  onValue(vrCountRef, (snapshot) => {
+    const data = snapshot.val();
+    if(data) {
+      // 전광판 화면의 '금일 총 예약 건수' 숫자를 업데이트하는 코드
+      // (예시: 해당 숫자 ID가 total-count 일 때)
+      const element = document.getElementById('total-count');
+      if(element) element.innerText = data.count;
+    }
+  });
+</script>
 </head>
 <body>
 
