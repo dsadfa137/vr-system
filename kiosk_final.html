@@ -295,5 +295,123 @@
   <script src="https://cdn.jsdelivr.net/gh/inexorablewriter/text-encoder-by-euckr/textencode.min.js"></script>
   
   <script type="module">
+    // 1. Firebase 모듈 정상적으로 Import 및 닫기 완료
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import {
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    // 2. 문경에코월드 Firebase 키오스크 설정 객체 세팅
+    const firebaseConfig = {
+      apiKey: "AIzaSyDeKwMVbxfvO9SKjJXYCkuJrz630u6pxsk",
+      authDomain: "mungyeong-kiosk.firebaseapp.com",
+      databaseURL: "https://mungyeong-kiosk-default-rtdb.firebaseio.com",
+      projectId: "mungyeong-kiosk",
+      storageBucket: "mungyeong-kiosk.appspot.com",
+      messagingSenderId: "1020366726033",
+      appId: "1:1020366726033:web:04fc7e0638d1d0e40c3030",
+      measurementId: "G-8GSFNWLX5Q"
+    };
+
+    // 3. Firebase 및 실시간 데이터베이스 초기화
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // 4. 시스템 로드 및 초기 연동 확인용 테스트 로직
+    window.addEventListener('DOMContentLoaded', () => {
+      console.log("Firebase 연동 및 키오스크 시스템 로드 완료");
+      
+      // 실시간 데이터베이스 연동 확인 예시 (콘솔 확인용)
+      const statusRef = ref(db, '.info/connected');
+      onValue(statusRef, (snap) => {
+        if (snap.val() === true) {
+          console.log("Firebase 서버 연동 성공");
+        } else {
+          console.log("Firebase 서버 연결 대기 중...");
+        }
+      });
+    });
+  </script>
+</head>
+<body>
+
+  <div class="wrap">
+    <div class="screen">
+      <div class="header">
+        <h1>문경에코월드 번호표 발권</h1>
+        <div class="time-box" id="live-clock">시간 계산 중...</div>
+      </div>
+
+      <div class="content-page active" id="page-main">
+        <div class="zone-container">
+          <div class="zone-card survival">
+            <div class="zone-img" style="background-image: url('https://images.unsplash.com/photo-1538481199705-c710c4e965fc?auto=format&fit=crop&q=80&w=400');"></div>
+            <div class="zone-info">
+              <h2 class="zone-title">서바이벌존</h2>
+              <p class="zone-desc">레이저 장비를 착용하고 팀을 나눠 즐기는 실내 서바이벌 체험입니다. 전용 공간에서 안전하게 모의 전투를 즐길 수 있습니다.</p>
+              <div class="zone-condition">신장 150cm 이상</div>
+            </div>
+          </div>
+          <div class="zone-card vr">
+            <div class="zone-img" style="background-image: url('https://images.unsplash.com/photo-1593508512255-86ab42a8e620?auto=format&fit=crop&q=80&w=400');"></div>
+            <div class="zone-info">
+              <h2 class="zone-title">VR존</h2>
+              <p class="zone-desc">1시간 단위 예약제로 운영되는 VR 가상현실 체험 공간입니다. 정원 제한으로 더욱 쾌적하고 생생한 가상현실을 경험할 수 있습니다.</p>
+              <div class="zone-condition" style="background:#ecfeff; color:var(--vr);">신장 140cm 이상</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="main-btns">
+          <button class="btn-action btn-survival" onclick="alert('서바이벌 예약 페이지 구현부 필요')">레이저 서바이벌<br>시간 예약 발권</button>
+          <button class="btn-action btn-vr" onclick="alert('VR 예약 페이지 구현부 필요')">VR체험존<br>시간 예약 발권</button>
+        </div>
+
+        <div class="status-board">
+          <div class="status-box srv">
+            <h3>서바이벌 금일 예약 건수</h3>
+            <div class="num" id="main-srv-count">0</div>
+          </div>
+          <div class="status-box vrc">
+            <h3>VR 금일 예약 건수</h3>
+            <div class="num" id="main-vr-count">0</div>
+          </div>
+        </div>
+
+        <div class="promo-banner-container">
+          <div class="promo-slide active">문경에코월드에 오신 것을 환영합니다.</div>
+        </div>
+      </div>
+
+      <div class="footer-nav">
+        <div class="guide-text">※ 안내: 이용을 원하시는 체험 안내 카드를 확인하신 후 버튼을 눌러주세요.</div>
+        <div class="admin-bar">
+          <button class="btn-admin-trigger" onclick="document.getElementById('admin-panel').classList.toggle('open')">⚙️ 시스템 관리</button>
+          <div class="admin-panel" id="admin-panel">
+            <button class="btn-admin-action" style="color:var(--danger)">전체 데이터 초기화</button>
+            <button class="btn-admin-action">COM5 프린터 인쇄 테스트</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // 시계 작동 기능 로직 추가
+    function updateClock() {
+      const now = new Date();
+      const Y = now.getFullYear();
+      const M = String(now.getMonth() + 1).padStart(2, '0');
+      const D = String(now.getDate()).padStart(2, '0');
+      const days = ['일', '월', '화', '수', '목', '금', '토'];
+      const dayName = days[now.getDay()];
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const ss = String(now.getSeconds()).padStart(2, '0');
+      
+      document.getElementById('live-clock').innerText = `${Y}년 ${M}월 ${D}일 ${dayName}요일 | ${hh}시 ${mm}분 ${ss}초`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+  </script>
+</body>
+</html>
