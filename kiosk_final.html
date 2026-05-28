@@ -293,6 +293,37 @@
   </style>
   <script src="https://unpkg.com/hangul-js@0.2.6/hangul.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/inexorablewriter/text-encoder-by-euckr/textencode.min.js"></script>
+  
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, set, runTransaction } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDeKWmVbxfvO9SKjJXYCkuJrz630u6pxsk",
+      authDomain: "mungyeong-kiosk.firebaseapp.com",
+      databaseURL: "https://mungyeong-kiosk-default-rtdb.firebaseio.com",
+      projectId: "mungyeong-kiosk",
+      storageBucket: "mungyeong-kiosk.firebasestorage.app",
+      messagingSenderId: "1020366726033",
+      appId: "1:1020366726033:web:04fc7e0638d1d0e40c3030",
+      measurementId: "G-8GSFNWLX5Q"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    // 전광판 데이터 연동 전송 내부 전역 등록 함수
+    window.sendReservationToFirebase = function(type) {
+      const targetRef = ref(database, 'reservations/' + type);
+      runTransaction(targetRef, (currentData) => {
+        if (currentData === null) {
+          return { count: 1 };
+        } else {
+          return { count: (currentData.count || 0) + 1 };
+        }
+      }).catch(err => console.error("전광판 전송 실패:", err));
+    }
+  </script>
 </head>
 <body>
 
@@ -799,6 +830,7 @@
       printViaSerial(testTxt);
     }
 
+    // 최종 예약 및 발권 실행 함수 (실시간 데이터 연동 탑재 완료)
     function submitReservation(){
       const name = $('inputName').value.trim();
       if(!name) {
@@ -815,12 +847,18 @@
 
       let printText = "";
 
-      // [동기화 순서 교정] Firebase 전송 전, 로컬 객체에 신규 예약 데이터를 먼저 적재합니다.
+      // 1. 선택된 모드에 따라 로컬 스토리지 데이터 적재 및 Firebase 전광판 데이터 송신 실행
       if(currentMode === "SURVIVAL") {
         const agreeText = isAgreeSrv ? "동의" : "비동의";
         srvBookings[`${selectedTime}-${selectedTeam}`] = {
           name: name, count: currentCount, agree: agreeText, time: getNowDateTime()
         };
+        
+        // 전광판 서바이벌 카운트 업데이트 트리거 실행
+        if (typeof window.sendReservationToFirebase === "function") {
+          window.sendReservationToFirebase('laser');
+        }
+
         printText = 
           "       문경에코월드\n" +
           "   서바이벌 예약 확인증\n" +
@@ -831,9 +869,15 @@
           "인원수: " + currentCount + "명\n" +
           "동시체험동의: " + agreeText + "\n" +
           "------------------------\n" +
-          "발권일시: " + getNowDateTime();
+          "발권일시: " + getNowDateTime() + "\n\n\n\n";
       } else {
         vrBookings[orderKey] = payload;
+        
+        // 전광판 VR 카운트 업데이트 트리거 실행
+        if (typeof window.sendReservationToFirebase === "function") {
+          window.sendReservationToFirebase('vr');
+        }
+
         printText = 
           "       문경에코월드\n" +
           "     VR존 예약 확인증\n" +
@@ -842,58 +886,19 @@
           "예약자: " + name + "\n" +
           "인원수: " + currentCount + "명\n" +
           "------------------------\n" +
-          "지정시간 5분 전까지 꼭 입장!\n" +
-          "발권일시: " + getNowDateTime();
+          "발권일시: " + getNowDateTime() + "\n\n\n\n";
       }
 
-      // 대시보드 및 로컬스토리지 즉시 최신화 (정확한 .length 연산을 위해 필수)
+      // 2. 대시보드 UI 대기 번호판 갱신 및 프린터 인쇄 명령 처리
       renderDashboard();
-
-      if (currentMode === "VR") {
-        // 데이터가 반영된 최종 예약 건수를 추출합니다.
-        const currentVrCount = Object.keys(vrBookings).length;
-        
-        fetch(FIREBASE_URL, {
-          method: "PATCH",
-          body: JSON.stringify({
-            eco_vr_last: currentVrCount
-          })
-        })
-        .then(() => {
-          console.log("Firebase VR 실시간 발권 동기화 완료: " + currentVrCount);
-          $('calledNoVr').textContent = currentVrCount;
-        })
-        .catch(err => console.error("Firebase 전송 실패:", err));
+      if (typeof printViaSerial === "function") {
+        printViaSerial(printText);
+      } else {
+        console.log("시리얼 프린트 대체 출력:\n", printText);
       }
 
-      // 인쇄 스트림 실행 후 홈화면 복귀
-      printViaSerial(printText).then(() => { goHome(); });
-    }
-
-    async function printViaSerial(textData) {
-      try {
-        if (!navigator.serial) { alert("이 브라우저는 Serial API를 지원하지 않습니다."); return; }
-        if (!serialPort) { serialPort = await navigator.serial.requestPort(); }
-        if (!serialPort.writable) { await serialPort.open({ baudRate: 9600 }); }
-        
-        const writer = serialPort.writable.getWriter();
-        
-        const encoder = new TextEncoderByEuckr();
-        const bodyBytes = encoder.encode(textData + "\n\n\n\n\n");
-        
-        const initBytes = new Uint8Array([0x1b, 0x40]);
-        const cutBytes = new Uint8Array([0x1d, 0x56, 0x42, 0x00]);
-        
-        const payload = new Uint8Array(initBytes.length + bodyBytes.length + cutBytes.length);
-        payload.set(initBytes, 0);
-        payload.set(bodyBytes, initBytes.length);
-        payload.set(cutBytes, initBytes.length + bodyBytes.length);
-        
-        await writer.write(payload);
-        writer.releaseLock();
-      } catch (err) {
-        console.error("프린터 이관 에러:", err);
-      }
+      alert(`${name}님, 예약 발권이 완료되었습니다! 확인증을 지참해 주십시오.`);
+      goHome();
     }
   </script>
 </body>
