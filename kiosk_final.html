@@ -541,7 +541,6 @@
             isTimeOver = true;
           }
         } else {
-          // [버그 수정] 타임 슬롯 시간 자체와 정교한 비교 연산 처리
           if (currentHour > slotHour) {
             isTimeOver = true;
           } else if (currentHour === slotHour) {
@@ -773,6 +772,33 @@
       return Hangul.assemble(finalTokens);
     }
 
+    function toggleAdminPanel() {
+      $('adminPanelBox').classList.toggle('open');
+    }
+
+    function resetAllData() {
+      if(confirm("정말로 모든 로컬 및 서버 데이터를 초기화하시겠습니까?")) {
+        localStorage.clear();
+        srvBookings = {};
+        vrBookings = {};
+        
+        fetch(FIREBASE_URL, {
+          method: "PUT",
+          body: JSON.stringify({ eco_vr_last: 0 })
+        })
+        .then(() => {
+          alert("초기화 완료");
+          renderDashboard();
+          goHome();
+        });
+      }
+    }
+
+    function testSerialPrint() {
+      const testTxt = "--- PRINTER TEST ---\n문경에코월드 정상 출력\n--------------------\n";
+      printViaSerial(testTxt);
+    }
+
     function submitReservation(){
       const name = $('inputName').value.trim();
       if(!name) {
@@ -789,6 +815,7 @@
 
       let printText = "";
 
+      // [동기화 순서 교정] Firebase 전송 전, 로컬 객체에 신규 예약 데이터를 먼저 적재합니다.
       if(currentMode === "SURVIVAL") {
         const agreeText = isAgreeSrv ? "동의" : "비동의";
         srvBookings[`${selectedTime}-${selectedTeam}`] = {
@@ -819,7 +846,11 @@
           "발권일시: " + getNowDateTime();
       }
 
+      // 대시보드 및 로컬스토리지 즉시 최신화 (정확한 .length 연산을 위해 필수)
+      renderDashboard();
+
       if (currentMode === "VR") {
+        // 데이터가 반영된 최종 예약 건수를 추출합니다.
         const currentVrCount = Object.keys(vrBookings).length;
         
         fetch(FIREBASE_URL, {
@@ -829,14 +860,13 @@
           })
         })
         .then(() => {
-          console.log("Firebase VR 실시간 발권 동기화 완료");
-          // [추가 보완] 대시보드 로컬 즉시 반영
+          console.log("Firebase VR 실시간 발권 동기화 완료: " + currentVrCount);
           $('calledNoVr').textContent = currentVrCount;
         })
         .catch(err => console.error("Firebase 전송 실패:", err));
       }
 
-      renderDashboard();
+      // 인쇄 스트림 실행 후 홈화면 복귀
       printViaSerial(printText).then(() => { goHome(); });
     }
 
@@ -848,19 +878,12 @@
         
         const writer = serialPort.writable.getWriter();
         
-        // ESC/POS 명령어 설정
-        const initCmd = "\x1b\x40"; 
-        const cutCmd = "\x1d\x56\x42\x00"; 
-        
-        // [버그 수정] 한글 인코딩 변환을 EUC-KR 바이너리로 실행하여 출력부 깨짐 영구 해결
         const encoder = new TextEncoderByEuckr();
         const bodyBytes = encoder.encode(textData + "\n\n\n\n\n");
         
-        // 명령어 전송용 빌더
         const initBytes = new Uint8Array([0x1b, 0x40]);
         const cutBytes = new Uint8Array([0x1d, 0x56, 0x42, 0x00]);
         
-        // 병합 후 스트림 전송
         const payload = new Uint8Array(initBytes.length + bodyBytes.length + cutBytes.length);
         payload.set(initBytes, 0);
         payload.set(bodyBytes, initBytes.length);
@@ -868,35 +891,8 @@
         
         await writer.write(payload);
         writer.releaseLock();
-      } catch (error) {
-        console.error("프린터 전송 에러:", error);
-      }
-    }
-
-    function testSerialPrint() {
-      const testFormat = "====== 프린터 연결 시험 ======\n발권 시간: " + getNowDateTime() + "\n==============================";
-      printViaSerial(testFormat);
-    }
-
-    function toggleAdminPanel(){ $('adminPanelBox').classList.toggle('open'); }
-
-    function resetAllData(){
-      if(confirm("정말로 전체 예약 카운트를 초기화하시겠습니까?")){
-        srvBookings = {};
-        vrBookings = {};
-        
-        fetch(FIREBASE_URL, {
-          method: "PATCH",
-          body: JSON.stringify({
-            eco_vr_last: 0,
-            eco_vr_called: 0
-          })
-        })
-        .then(() => {
-          renderDashboard();
-          alert("모든 데이터가 서버와 로컬에서 초기화되었습니다.");
-        })
-        .catch(err => console.error("Firebase 초기화 에러:", err));
+      } catch (err) {
+        console.error("프린터 이관 에러:", err);
       }
     }
   </script>
