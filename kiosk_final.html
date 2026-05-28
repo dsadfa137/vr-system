@@ -295,11 +295,10 @@
   <script src="https://cdn.jsdelivr.net/gh/inexorablewriter/text-encoder-by-euckr/textencode.min.js"></script>
   
   <script type="module">
-    // 1. Firebase 모듈 정상적으로 Import 및 닫기 완료
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    // 2. 문경에코월드 Firebase 키오스크 설정 객체 세팅
+    // Firebase 설정
     const firebaseConfig = {
       apiKey: "AIzaSyDeKwMVbxfvO9SKjJXYCkuJrz630u6pxsk",
       authDomain: "mungyeong-kiosk.firebaseapp.com",
@@ -311,30 +310,235 @@
       measurementId: "G-8GSFNWLX5Q"
     };
 
-    // 3. Firebase 및 실시간 데이터베이스 초기화
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // 4. 시스템 로드 및 초기 연동 확인용 테스트 로직
+    // 전역 상태 변수
+    let currentMode = 'survival'; // 'survival' 또는 'vr'
+    let selectedTimeSlot = '';
+    let selectedTeam = '';
+    let selectedCount = 1;
+    let isResident = false;
+
+    // DOM 요소 로드 후 이벤트 정의
     window.addEventListener('DOMContentLoaded', () => {
-      console.log("Firebase 연동 및 키오스크 시스템 로드 완료");
-      
-      // 실시간 데이터베이스 연동 확인 예시 (콘솔 확인용)
-      const statusRef = ref(db, '.info/connected');
-      onValue(statusRef, (snap) => {
-        if (snap.val() === true) {
-          console.log("Firebase 서버 연동 성공");
-        } else {
-          console.log("Firebase 서버 연결 대기 중...");
-        }
+      // 실시간 카운트 동기화
+      onValue(ref(db, 'status'), (snapshot) => {
+        const data = snapshot.val() || { survival_count: 0, vr_count: 0 };
+        document.getElementById('main-srv-count').innerText = data.survival_count || 0;
+        document.getElementById('main-vr-count').innerText = data.vr_count || 0;
+      });
+
+      // 가상 키패드 입력 매핑
+      const phoneInput = document.getElementById('user-phone');
+      document.querySelectorAll('.kb-key').forEach(key => {
+        key.addEventListener('click', () => {
+          const val = key.innerText;
+          if (val === '지움') {
+            phoneInput.value = phoneInput.value.slice(0, -1);
+          } else if (val === '전체지움') {
+            phoneInput.value = '';
+          } else {
+            if(phoneInput.value.length < 13) phoneInput.value += val;
+          }
+        });
       });
     });
+
+    // 페이지 전환 함수
+    window.goPage = function(pageId) {
+      document.querySelectorAll('.content-page').forEach(p => p.classList.remove('active'));
+      document.getElementById(pageId).classList.add('active');
+      
+      // 예약 폼 페이지로 갈 때만 가상 키패드 활성화
+      if(pageId === 'page-form') {
+        document.getElementById('keyboard').classList.add('active');
+      } else {
+        document.getElementById('keyboard').classList.remove('active');
+      }
+    }
+
+    // 시간 선택 페이지 진입
+    window.openBooking = function(mode) {
+      currentMode = mode;
+      const titleEl = document.getElementById('select-page-title');
+      const noticeEl = document.getElementById('select-page-notice');
+      const gridContainer = document.getElementById('time-grid-container');
+      
+      gridContainer.innerHTML = '로딩 중...';
+
+      if(mode === 'survival') {
+        titleEl.innerText = "레이저 서바이벌 시간 예약";
+        noticeEl.innerText = "※ 서바이벌은 타임별 A팀 / B팀으로 나누어 동시 접수(진행)합니다.\n신장 150cm 미만은 이용하실 수 없습니다.";
+        document.getElementById('btn-confirm-nav').style.background = "var(--survival)";
+      } else {
+        titleEl.innerText = "VR 체험존 시간 예약";
+        noticeEl.innerText = "※ VR체험존은 시간대별 정원 예약제로 운영됩니다.\n신장 140cm 미만은 이용하실 수 없습니다.";
+        document.getElementById('btn-confirm-nav').style.background = "var(--vr)";
+      }
+
+      // Firebase에서 해당 모드의 실시간 예약 슬롯 가져오기
+      onValue(ref(db, `slots/${mode}`), (snapshot) => {
+        const slots = snapshot.val() || {};
+        gridContainer.innerHTML = '';
+
+        // 운영 시간대 동적 생성 (10:00 ~ 17:00)
+        for(let h=10; h<=17; h++) {
+          const timeStr = `${h}:00`;
+          const slotData = slots[timeStr] || (mode === 'survival' ? {A:'available', B:'available'} : {slots_left: 4});
+          
+          const card = document.createElement('div');
+          card.className = 'time-slot-card';
+          
+          const timeDiv = document.createElement('div');
+          timeDiv.className = 'slot-time';
+          timeDiv.innerText = timeStr;
+          card.appendChild(timeDiv);
+
+          const btnGroup = document.createElement('div');
+          btnGroup.className = 'team-btns';
+
+          if(mode === 'survival') {
+            // 서바이벌: A팀, B팀 구조
+            ['A', 'B'].forEach(team => {
+              const btn = document.createElement('button');
+              const status = slotData[team] || 'available';
+              btn.className = `btn-team ${status === 'booked' ? 'booked' : 'available'}`;
+              btn.innerText = `${team}팀\n${status === 'booked' ? '[마감]' : '[신청가능]'}`;
+              if(status !== 'booked') {
+                btn.onclick = () => selectSlot(timeStr, team);
+              }
+              btnGroup.appendChild(btn);
+            });
+          } else {
+            // VR 체험존: 잔여석 구조 (최대 4명)
+            const left = slotData.slots_left !== undefined ? slotData.slots_left : 4;
+            const btn = document.createElement('button');
+            btn.className = `btn-team vr-mode ${left <= 0 ? 'booked' : 'available'}`;
+            btn.innerText = left <= 0 ? `정원 마감` : `예약 가능\n(${left}석 남음)`;
+            if(left > 0) {
+              btn.onclick = () => selectSlot(timeStr, 'VR');
+            }
+            btnGroup.appendChild(btn);
+          }
+
+          card.appendChild(btnGroup);
+          gridContainer.appendChild(card);
+        }
+      }, { onlyOnce: true });
+
+      goPage('page-select');
+    }
+
+    // 슬롯 선택 시 다음 단계(폼 입력)로 이동
+    function selectSlot(time, team) {
+      selectedTimeSlot = time;
+      selectedTeam = team;
+      
+      // 선택 정보 UI 세팅
+      document.getElementById('summary-text').innerText = `${selectedTimeSlot} [${selectedTeam === 'VR' ? 'VR체험존' : selectedTeam+'팀'}]`;
+      
+      // 인원수 초기화
+      selectedCount = 1;
+      document.getElementById('count-display').innerText = selectedCount;
+      
+      // 거주지 선택 초기화
+      isResident = false;
+      document.getElementById('btn-res-normal').classList.add('active');
+      document.getElementById('btn-res-local').classList.remove('active');
+      
+      document.getElementById('user-phone').value = '';
+      goPage('page-form');
+    }
+
+    // 인원수 가감 조절
+    window.changeCount = function(amount) {
+      selectedCount += amount;
+      if(selectedCount < 1) selectedCount = 1;
+      if(currentMode === 'vr' && selectedCount > 4) {
+        alert('VR체험존은 타임당 최대 4명까지 예약 가능합니다.');
+        selectedCount = 4;
+      }
+      document.getElementById('count-display').innerText = selectedCount;
+    }
+
+    // 거주지 구분 토글
+    window.setResident = function(status) {
+      isResident = status;
+      if(status) {
+        document.getElementById('btn-res-local').classList.add('active');
+        document.getElementById('btn-res-normal').classList.remove('active');
+      } else {
+        document.getElementById('btn-res-normal').classList.add('active');
+        document.getElementById('btn-res-local').classList.remove('active');
+      }
+    }
+
+    // 최종 예약 완료 및 DB 전송
+    window.submitBooking = function() {
+      const phone = document.getElementById('user-phone').value.trim();
+      if(!phone || phone.length < 10) {
+        alert('올바른 휴대폰 번호를 입력해주세요.');
+        return;
+      }
+
+      const bookingId = Date.now().toString();
+      const bookingData = {
+        mode: currentMode,
+        time: selectedTimeSlot,
+        team: selectedTeam,
+        count: selectedCount,
+        resident: isResident ? '문경시민' : '일반',
+        phone: phone,
+        timestamp: bookingId
+      };
+
+      // 1. 개별 예약 내역 저장
+      set(ref(db, `bookings/${bookingId}`), bookingData)
+      .then(() => {
+        // 2. 슬롯 마감 상태 업데이트 및 전역 카운트 증가 정산
+        if(currentMode === 'survival') {
+          update(ref(db, `slots/survival/${selectedTimeSlot}`), { [selectedTeam]: 'booked' });
+          onValue(ref(db, 'status/survival_count'), (snap) => {
+            set(ref(db, 'status/survival_count'), (snap.val() || 0) + 1);
+          }, { onlyOnce: true });
+        } else {
+          // VR 슬롯 정원 차감
+          onValue(ref(db, `slots/vr/${selectedTimeSlot}/slots_left`), (snap) => {
+            const currentLeft = snap.val() !== null ? snap.val() : 4;
+            set(ref(db, `slots/vr/${selectedTimeSlot}/slots_left`), Math.max(0, currentLeft - selectedCount));
+          }, { onlyOnce: true });
+
+          onValue(ref(db, 'status/vr_count'), (snap) => {
+            set(ref(db, 'status/vr_count'), (snap.val() || 0) + 1);
+          }, { onlyOnce: true });
+        }
+
+        alert('예약 번호표 발권이 완료되었습니다!');
+        goPage('page-main');
+      })
+      .catch((err) => {
+        alert('연동 에러 발생: ' + err.message);
+      });
+    }
+
+    // 전체 데이터 초기화 기능 (관리자용)
+    window.resetAllData = function() {
+      if(confirm('금일 생성된 모든 발권 및 예약 현황을 초기화하시겠습니까?')) {
+        set(ref(db, 'bookings'), null);
+        set(ref(db, 'status'), { survival_count: 0, vr_count: 0 });
+        set(ref(db, 'slots'), null);
+        alert('시스템이 성공적으로 초기화되었습니다.');
+        location.reload();
+      }
+    }
   </script>
 </head>
 <body>
 
   <div class="wrap">
     <div class="screen">
+      
       <div class="header">
         <h1>문경에코월드 번호표 발권</h1>
         <div class="time-box" id="live-clock">시간 계산 중...</div>
@@ -343,15 +547,15 @@
       <div class="content-page active" id="page-main">
         <div class="zone-container">
           <div class="zone-card survival">
-            <div class="zone-img" style="background-image: url('https://images.unsplash.com/photo-1538481199705-c710c4e965fc?auto=format&fit=crop&q=80&w=400');"></div>
+            <div class="zone-img" style="background-image: url('./img/survival.jpg');"></div>
             <div class="zone-info">
               <h2 class="zone-title">서바이벌존</h2>
-              <p class="zone-desc">레이저 장비를 착용하고 팀을 나눠 즐기는 실내 서바이벌 체험입니다. 전용 공간에서 안전하게 모의 전투를 즐길 수 있습니다.</p>
+              <p class="zone-desc">레이저 장비를 착용하고 팀을 나눠 즐기는 신나는 실내 서바이벌 체험입니다. 전용 공간에서 안전하게 모의 전투를 즐길 수 있습니다.</p>
               <div class="zone-condition">신장 150cm 이상</div>
             </div>
           </div>
           <div class="zone-card vr">
-            <div class="zone-img" style="background-image: url('https://images.unsplash.com/photo-1593508512255-86ab42a8e620?auto=format&fit=crop&q=80&w=400');"></div>
+            <div class="zone-img" style="background-image: url('./img/vr.jpg');"></div>
             <div class="zone-info">
               <h2 class="zone-title">VR존</h2>
               <p class="zone-desc">1시간 단위 예약제로 운영되는 VR 가상현실 체험 공간입니다. 정원 제한으로 더욱 쾌적하고 생생한 가상현실을 경험할 수 있습니다.</p>
@@ -361,8 +565,8 @@
         </div>
 
         <div class="main-btns">
-          <button class="btn-action btn-survival" onclick="alert('서바이벌 예약 페이지 구현부 필요')">레이저 서바이벌<br>시간 예약 발권</button>
-          <button class="btn-action btn-vr" onclick="alert('VR 예약 페이지 구현부 필요')">VR체험존<br>시간 예약 발권</button>
+          <button class="btn-action btn-survival" onclick="openBooking('survival')">레이저 서바이벌<br>시간 예약 발권</button>
+          <button class="btn-action btn-vr" onclick="openBooking('vr')">VR체험존<br>시간 예약 발권</button>
         </div>
 
         <div class="status-board">
@@ -377,7 +581,74 @@
         </div>
 
         <div class="promo-banner-container">
-          <div class="promo-slide active">문경에코월드에 오신 것을 환영합니다.</div>
+          <div class="promo-slide active" style="background-image:url('./img/banner.jpg'); background-size: cover; color:transparent;">문경에코월드</div>
+        </div>
+      </div>
+
+      <div class="content-page" id="page-select">
+        <h2 class="page-title" id="select-page-title">시간 예약</h2>
+        <p class="page-notice" id="select-page-notice">안내 알림문구 위치</p>
+        
+        <div class="grid-container" id="time-grid-container"></div>
+        
+        <div class="form-nav-btns" style="grid-template-columns: 1fr; margin-top: auto;">
+          <button class="btn-nav cancel" onclick="goPage('page-main')">이전 화면으로</button>
+        </div>
+      </div>
+
+      <div class="content-page" id="page-form">
+        <h2 class="page-title">예약 정보 입력</h2>
+        <p class="page-notice">※ 발권 정보를 전송하고 본인 확인을 위해 휴대폰 번호를 정확히 입력해 주세요.</p>
+        
+        <div class="form-container">
+          <div class="form-group">
+            <label>선택한 예약 타임</label>
+            <div class="form-control" id="summary-text" style="background:#f1f5f9; color:var(--dark); font-weight:800;">-</div>
+          </div>
+
+          <div class="form-group">
+            <label>체험 인원 설정</label>
+            <div class="count-picker">
+              <button class="btn-count" onclick="changeCount(-1)">-</button>
+              <div class="count-val" id="count-display">1</div>
+              <button class="btn-count" onclick="changeCount(1)">+</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>지역 거주지 구분</label>
+            <div class="toggle-group">
+              <button class="btn-toggle active" id="btn-res-normal" onclick="setResident(false)">일반 관람객</button>
+              <button class="btn-toggle" id="btn-res-local" onclick="setResident(true)">문경시민 (할인대상)</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>휴대폰 번호 입력</label>
+            <input type="text" class="form-control" id="user-phone" placeholder="숫자만 입력 (예: 01012345678)" readonly>
+          </div>
+        </div>
+
+        <div class="form-nav-btns">
+          <button class="btn-nav cancel" onclick="goPage('page-select')">취소</button>
+          <button class="btn-nav confirm" id="btn-confirm-nav" onclick="submitBooking()">번호표 발권 완료</button>
+        </div>
+      </div>
+
+      <div class="keyboard-section" id="keyboard">
+        <div class="kb-row">
+          <button class="kb-key">1</button><button class="kb-key">2</button><button class="kb-key">3</button>
+        </div>
+        <div class="kb-row">
+          <button class="kb-key">4</button><button class="kb-key">5</button><button class="kb-key">6</button>
+        </div>
+        <div class="kb-row">
+          <button class="kb-key">7</button><button class="kb-key">8</button><button class="kb-key">9</button>
+        </div>
+        <div class="kb-row">
+          <button class="kb-key wide" style="color:var(--danger)">전체지움</button>
+          <button class="kb-key">0</button>
+          <button class="kb-key wide">지움</button>
         </div>
       </div>
 
@@ -386,8 +657,8 @@
         <div class="admin-bar">
           <button class="btn-admin-trigger" onclick="document.getElementById('admin-panel').classList.toggle('open')">⚙️ 시스템 관리</button>
           <div class="admin-panel" id="admin-panel">
-            <button class="btn-admin-action" style="color:var(--danger)">전체 데이터 초기화</button>
-            <button class="btn-admin-action">COM5 프린터 인쇄 테스트</button>
+            <button class="btn-admin-action" style="color:var(--danger)" onclick="resetAllData()">전체 데이터 초기화</button>
+            <button class="btn-admin-action" onclick="alert('COM5 라벨 인쇄 명령을 테스트합니다.')">COM5 프린터 인쇄 테스트</button>
           </div>
         </div>
       </div>
@@ -396,7 +667,7 @@
   </div>
 
   <script>
-    // 시계 작동 기능 로직 추가
+    // 시계 작동 로직
     function updateClock() {
       const now = new Date();
       const Y = now.getFullYear();
