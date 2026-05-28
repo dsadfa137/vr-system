@@ -865,4 +865,54 @@
           name: name, count: currentCount, time: getNowDateTime()
         };
 
-        if (typeof window.sendReservationToFirebase 
+        if (typeof window.sendReservationToFirebase === "function") {
+          window.sendReservationToFirebase('vr', uniqueKey, currentCount);
+        }
+
+        printText = 
+          "\n" +
+          "        문경에코월드\n" +
+          "      VR존 예약 확인증\n" +
+          "------------------------\n" +
+          "예약시간: " + selectedTime + "\n" +
+          "예약자: " + name + "\n" +
+          "인원수: " + currentCount + "명\n" +
+          "------------------------\n" +
+          "발권시간: " + getNowDateTime() + "\n\n\n\n";
+      }
+
+      // 2. 대시보드 새로고침 및 영수증 하드웨어 전송
+      renderDashboard();
+      printViaSerial(printText);
+      
+      alert("예약 신청 및 대기 번호표 출력이 완료되었습니다!");
+      goHome();
+    }
+
+    // 영수증 프린터 COM5 Serial Web API 전송 함수
+    async function printViaSerial(text) {
+      try {
+        if (!serialPort) {
+          const ports = await navigator.serial.getPorts();
+          if (ports.length > 0) {
+            serialPort = ports[0];
+          } else {
+            serialPort = await navigator.serial.requestPort();
+          }
+        }
+        
+        if (!serialPort.readable) {
+          await serialPort.open({ baudRate: 9600 });
+        }
+        
+        const encoder = new TextEncoderEUCKR();
+        const writer = serialPort.writable.getWriter();
+        await writer.write(encoder.encode(text));
+        writer.releaseLock();
+      } catch (error) {
+        console.error("프린터 연동 실패 (시뮬레이터 환경 우회):", error);
+      }
+    }
+  </script>
+</body>
+</html>
