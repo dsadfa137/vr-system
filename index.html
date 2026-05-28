@@ -3,17 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>문경에코월드 통합 대기 전광판</title>
+  <title>문경에코월드 실시간 입장 안내 전광판</title>
   <style>
     :root {
-      --bg: #0f172a;
+      --bg: #0b0f19;
       --card: #1e293b;
-      --survival-color: #9333ea;
+      --survival-color: #a855f7;
       --vr-color: #06b6d4;
       --text: #f8fafc;
       --muted: #94a3b8;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    
     body {
       font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
       background: var(--bg);
@@ -22,114 +23,137 @@
       flex-direction: column;
       height: 100vh;
       overflow: hidden;
+      padding: 20px;
     }
+
+    /* 상단 헤더 (전광판 스타일) */
     .header {
-      background: linear-gradient(90deg, #1e293b, #0f172a);
-      padding: 12px;
       text-align: center;
-      border-bottom: 3px solid #334155;
+      padding: 15px 0 25px 0;
       position: relative;
     }
-    .header h1 { font-size: 26px; font-weight: 900; color: #fff; letter-spacing: 1px; }
-    .admin-toggle {
-      position: absolute;
-      right: 15px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: #334155;
-      color: #94a3b8;
-      border: 1px solid #475569;
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: bold;
-      cursor: pointer;
+    .header h1 {
+      font-size: 42px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      color: #ffffff;
+      text-shadow: 0 4px 12px rgba(0,0,0,0.5);
     }
-    .admin-toggle.active { background: #ef4444; color: #fff; }
+    .header .subtitle {
+      font-size: 18px;
+      color: var(--muted);
+      margin-top: 5px;
+      font-weight: 500;
+    }
+
+    /* 대형 2분할 레이아웃 */
     .split-container {
       flex: 1;
       display: flex;
       flex-direction: row;
-      padding: 15px;
-      gap: 15px;
+      gap: 25px;
       overflow: hidden;
+      margin-bottom: 10px;
     }
+
     .section-zone {
       flex: 1;
       background: var(--card);
-      border-radius: 20px;
-      padding: 20px;
+      border-radius: 32px;
+      padding: 30px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      gap: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      position: relative;
     }
+
+    /* 각 구역 테두리 부각 */
+    .section-zone.survival { border: 4px solid var(--survival-color); }
+    .section-zone.vr { border: 4px solid var(--vr-color); }
+
+    /* 구역 타이틀 (크고 선명하게) */
     .zone-title {
-      font-size: 22px;
+      font-size: 36px;
       font-weight: 900;
       text-align: center;
-      padding: 10px;
-      border-radius: 12px;
+      padding: 18px;
+      border-radius: 20px;
       color: #fff;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     }
-    .section-zone.survival { border: 3px solid var(--survival-color); }
-    .section-zone.survival .zone-title { background: var(--survival-color); }
-    .section-zone.vr { border: 3px solid var(--vr-color); }
-    .section-zone.vr .zone-title { background: var(--vr-color); }
+    .section-zone.survival .zone-title { background: linear-gradient(135deg, var(--survival-color), #7c3aed); }
+    .section-zone.vr .zone-title { background: linear-gradient(135deg, var(--vr-color), #0891b2); }
+
+    /* 전광판 핵심: 대형 번호 박스 */
     .number-box {
       flex: 1;
-      background: rgba(15, 23, 42, 0.6);
-      border-radius: 16px;
+      background: rgba(15, 23, 42, 0.7);
+      border-radius: 24px;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      padding: 10px;
-    }
-    .number-box .label { font-size: 16px; font-weight: 700; color: var(--muted); margin-bottom: 5px; }
-    .number-box .num { font-size: 90px; font-weight: 900; line-height: 1.1; }
-    .section-zone.survival .num { color: #fff; text-shadow: 0 0 20px rgba(147,51,234,0.6); }
-    .section-zone.vr .num { color: #fff; text-shadow: 0 0 20px rgba(6,182,212,0.6); }
-    .status-row { display: flex; gap: 10px; }
-    .mini-card {
-      flex: 1;
-      background: rgba(15, 23, 42, 0.4);
       border: 1px solid #334155;
-      border-radius: 12px;
-      padding: 10px;
-      text-align: center;
     }
-    .mini-card p { font-size: 13px; color: var(--muted); font-weight: bold; margin-bottom: 4px; }
-    .mini-card div { font-size: 28px; font-weight: 900; }
-    .control-row {
-      display: none;
-      grid-template-columns: 2fr 1fr;
+    .number-box .label { 
+      font-size: 24px; 
+      font-weight: 700; 
+      color: var(--muted); 
+      margin-bottom: 15px; 
+      letter-spacing: 1px;
+    }
+    .number-box .num { 
+      font-size: 180px; 
+      font-weight: 900; 
+      line-height: 1; 
+      font-family: 'Courier New', Courier, monospace; /* 숫자 정렬용 고정폭 느낌 */
+    }
+    
+    /* 호출된 번호 LED 글로우 효과 */
+    .section-zone.survival .num { color: #ffffff; text-shadow: 0 0 40px rgba(168,85,247,0.8); }
+    .section-zone.vr .num { color: #ffffff; text-shadow: 0 0 40px rgba(6,182,212,0.8); }
+
+    /* 하단 상태바 (접수 현황 안내) */
+    .status-row { 
+      display: flex; 
+      background: rgba(15, 23, 42, 0.4);
+      border-radius: 16px;
+      padding: 15px;
+      justify-content: center;
+      align-items: center;
+      border: 1px solid #334155;
+    }
+    .status-row p { font-size: 18px; color: var(--muted); font-weight: bold; margin-right: 15px; }
+    .status-row div { font-size: 24px; font-weight: 900; }
+
+    /* 오디오 활성화 유도 안내 레이어 (브라우저 정책 대응) */
+    #audioNotice {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(239, 68, 68, 0.95);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-weight: bold;
+      font-size: 16px;
+      z-index: 1000;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
       gap: 10px;
-      animation: fadeIn 0.2s ease-in-out;
     }
-    .btn {
-      border: 0; border-radius: 12px; padding: 14px 5px; font-size: 15px; font-weight: 800; cursor: pointer; color: #fff;
-      display: flex; align-items: center; justify-content: center; transition: opacity 0.1s;
-    }
-    .btn:active { opacity: 0.8; }
-    .survival .btn.next { background: var(--survival-color); }
-    .vr .btn.next { background: var(--vr-color); }
-    .btn.sub { background: #475569; font-size: 13px; }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(5px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @media (max-width: 768px) {
-      body { overflow-y: auto; }
-      .split-container { flex-direction: column; padding: 10px; gap: 10px; overflow-y: visible; flex: none; height: auto; }
-      .header h1 { font-size: 18px; }
-      .admin-toggle { padding: 4px 8px; font-size: 11px; }
-      .section-zone { padding: 15px; gap: 8px; flex: none; }
-      .zone-title { font-size: 16px; padding: 6px; }
-      .number-box { padding: 15px 10px; }
-      .number-box .num { font-size: 60px; }
-      .mini-card div { font-size: 22px; }
-      .btn { padding: 16px 5px; font-size: 14px; }
+
+    /* 대형 모니터 및 TV 대응 미디어 쿼리 */
+    @media (min-width: 1920px) {
+      .header h1 { font-size: 54px; }
+      .zone-title { font-size: 46px; }
+      .number-box .num { font-size: 24px; font-size: 240px; }
+      .number-box .label { font-size: 28px; }
     }
   </style>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -137,54 +161,47 @@
 </head>
 <body>
 
+  <div id="audioNotice" onclick="enableAudio()">
+    🔊 알림음 및 음성 재생을 위해 화면을 아무 곳이나 한 번 클릭해 주세요!
+  </div>
+
   <header class="header">
-    <h1>문경에코월드 실시간 입장 안내 시스템</h1>
-    <button class="admin-toggle" id="adminToggle" onclick="toggleAdminMode()">⚙️ 직원 제어 열기</button>
+    <h1>문경에코월드 실시간 입장 안내</h1>
+    <div class="subtitle">해당 번호의 대기자분께서는 입장해 주시기 바랍니다.</div>
   </header>
 
   <div class="split-container">
     <div class="section-zone survival">
       <div class="zone-title">💥 레이저 서바이벌</div>
       <div class="number-box">
-        <div class="label">현재 호출 대기 번호</div>
+        <div class="label">현재 입장 번호</div>
         <div class="num" id="svCalledNo">000</div>
       </div>
       <div class="status-row">
-        <div class="mini-card">
-          <p>금일 총 예약 건수</p>
-          <div id="svLastNo" style="color: var(--survival-color);">000</div>
-        </div>
-      </div>
-      <div class="control-row admin-controls">
-        <button class="btn next" onclick="callNext('survival')">▶ 다음 번호 호출 (+1)</button>
-        <button class="btn sub" onclick="callPrev('survival')">◀ 후퇴</button>
+        <p>오늘 총 접수 건수 :</p>
+        <div id="svLastNo" style="color: var(--survival-color);">000</div>
       </div>
     </div>
 
     <div class="section-zone vr">
       <div class="zone-title">🤖 VR 체험존</div>
       <div class="number-box">
-        <div class="label">현재 호출 대기 번호</div>
+        <div class="label">현재 입장 번호</div>
         <div class="num" id="vrCalledNo">000</div>
       </div>
       <div class="status-row">
-        <div class="mini-card">
-          <p>금일 총 예약 건수</p>
-          <div id="vrLastNo" style="color: var(--vr-color);">000</div>
-        </div>
-      </div>
-      <div class="control-row admin-controls">
-        <button class="btn next" onclick="callNext('vr')">▶ 다음 번호 호출 (+1)</button>
-        <button class="btn sub" onclick="callPrev('vr')">◀ 후퇴</button>
+        <p>오늘 총 접수 건수 :</p>
+        <div id="vrLastNo" style="color: var(--vr-color);">000</div>
       </div>
     </div>
   </div>
 
   <script>
+    // 키오스크 소스코드와 동일한 파이어베이스 설정 적용
     const firebaseConfig = {
       apiKey: "AIzaSyDeKWmVbxfvO9SKjJXYCkuJrz630u6pxsk",
       authDomain: "mungyeong-kiosk.firebaseapp.com",
-      databaseURL: "https://mungyeong-kiosk-default-rtdb.firebaseio.com/", // 주소 끝에 / 추가 완료
+      databaseURL: "https://mungyeong-kiosk-default-rtdb.firebaseio.com/",
       projectId: "mungyeong-kiosk",
       storageBucket: "mungyeong-kiosk.appspot.com",
       messagingSenderId: "1020366726033",
@@ -195,10 +212,10 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
+    // 동기화할 DB 경로 매칭
     const DB_KEYS = { survival: 'eco_srv_bookings', vr: 'eco_vr_bookings' };
     const CALL_KEYS = { survival: 'eco_survival_called_display', vr: 'eco_vr_called_display' };
 
-    let totalCounts = { survival: 0, vr: 0 };
     let calledNumbers = { survival: 0, vr: 0 };
     let isInitialLoad = { survival: true, vr: true };
     let audioCtx = null;
@@ -206,53 +223,49 @@
     const $ = id => document.getElementById(id);
     function pad(n){ return String(n).padStart(3, '0'); }
 
-    function initAudio() {
+    // 브라우저 오디오 권한 허용 함수
+    function enableAudio() {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
+      
+      // 알림 배너 숨기기
+      const notice = $('audioNotice');
+      if (notice) notice.style.display = 'none';
     }
-
-    function toggleAdminMode() {
-      initAudio();
-      const btn = $('adminToggle');
-      const controls = document.querySelectorAll('.admin-controls');
-      const isHidden = controls[0].style.display !== 'grid';
-      controls.forEach(el => el.style.display = isHidden ? 'grid' : 'none');
-      if(isHidden) {
-        btn.textContent = '🔒 제어 스위치 숨기기';
-        btn.classList.add('active');
-      } else {
-        btn.textContent = '⚙️ 직원 제어 열기';
-        btn.classList.remove('active');
-      }
-    }
+    // 화면 전체에 클릭 이벤트 바인딩하여 자연스럽게 오디오 잠금 해제
+    window.addEventListener('click', enableAudio);
 
     window.addEventListener('DOMContentLoaded', () => {
+      // 1. 금일 총 예약 건수 실시간 수신
       database.ref(DB_KEYS.survival).on('value', (snapshot) => {
         const data = snapshot.val() || {};
-        totalCounts.survival = Object.keys(data).length;
-        $('svLastNo').textContent = pad(totalCounts.survival);
+        $('svLastNo').textContent = pad(Object.keys(data).length);
       });
 
       database.ref(DB_KEYS.vr).on('value', (snapshot) => {
         const data = snapshot.val() || {};
-        totalCounts.vr = Object.keys(data).length;
-        $('vrLastNo').textContent = pad(totalCounts.vr);
+        $('vrLastNo').textContent = pad(Object.keys(data).length);
       });
 
+      // 2. 레이저 서바이벌 호출 번호 모니터링 및 음성 출력
       database.ref(CALL_KEYS.survival).on('value', (snapshot) => {
         const prevNum = calledNumbers.survival;
         calledNumbers.survival = Number(snapshot.val() || 0);
         $('svCalledNo').textContent = pad(calledNumbers.survival);
+        
+        // 새로고침 시 기존 번호가 바로 읽히는 것을 방지 (번호가 증가했을 때만 재생)
         if (!isInitialLoad.survival && calledNumbers.survival > prevNum) {
           playVoice('survival', calledNumbers.survival);
         }
         isInitialLoad.survival = false;
       });
 
+      // 3. VR 체험존 호출 번호 모니터링 및 음성 출력
       database.ref(CALL_KEYS.vr).on('value', (snapshot) => {
         const prevNum = calledNumbers.vr;
         calledNumbers.vr = Number(snapshot.val() || 0);
         $('vrCalledNo').textContent = pad(calledNumbers.vr);
+        
         if (!isInitialLoad.vr && calledNumbers.vr > prevNum) {
           playVoice('vr', calledNumbers.vr);
         }
@@ -260,48 +273,36 @@
       });
     });
 
+    // 딩동 알림음 + TTS 음성 호명 함수
     function playVoice(type, num) {
       if (num === 0) return;
+      
+      // [1단계] 전자 딩동음 오디오 노드 생성 및 재생
       try {
-        initAudio();
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.15);
-      } catch(e) {}
+        if (audioCtx && audioCtx.state === 'running') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain); 
+          gain.connect(audioCtx.destination);
+          
+          // 전광판에 어울리는 미음(587.33Hz) 주파수 세팅
+          osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+          osc.start(); 
+          osc.stop(audioCtx.currentTime + 0.18);
+        }
+      } catch(e) { console.log("알림음 재생 오류:", e); }
 
+      // [2단계] 딩동음 직후 TTS 안내 멘트 시작 (0.5초 딜레이)
       setTimeout(() => {
         const koName = (type === 'survival') ? '레이저 서바이벌' : '브이알 체험존';
         const msg = `${koName}, ${num}번 대기자님 입장해 주시기 바랍니다.`;
+        
         const utterance = new SpeechSynthesisUtterance(msg);
         utterance.lang = 'ko-KR';
-        utterance.rate = 0.95;
+        utterance.rate = 0.95; // 집중도를 높이기 위해 기본보다 살짝 부드러운 속도로 설정
         window.speechSynthesis.speak(utterance);
       }, 500);
-    }
-
-    function callNext(type) {
-      initAudio();
-      let curCalled = calledNumbers[type];
-      let maxLimit = totalCounts[type];
-      if (curCalled < maxLimit) {
-        curCalled++;
-        database.ref(CALL_KEYS[type]).set(curCalled);
-      } else {
-        const koName = (type === 'survival') ? '레이저 서바이벌' : 'VR 체험존';
-        alert(`${koName}에 오늘 접수된 예약 건수가 없거나 마지막 번호입니다.`);
-      }
-    }
-
-    function callPrev(type) {
-      initAudio();
-      let curCalled = calledNumbers[type];
-      if (curCalled > 0) {
-        curCalled--;
-        database.ref(CALL_KEYS[type]).set(curCalled);
-      }
     }
   </script>
 </body>
