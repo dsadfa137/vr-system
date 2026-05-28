@@ -140,9 +140,9 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* 📱 모바일 세로 모드 대응 (짤림 현상 방지 완벽 최적화) */
+    /* 📱 모바일 세로 모드 대응 */
     @media (max-width: 768px) {
-      body { overflow-y: auto; } /* 모바일에서 내용이 많아질 경우 안전하게 스크롤 제공 */
+      body { overflow-y: auto; }
       .split-container { 
         flex-direction: column; 
         padding: 10px; 
@@ -161,6 +161,9 @@
       .btn { padding: 16px 5px; font-size: 14px; }
     }
   </style>
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -210,6 +213,22 @@
   </div>
 
   <script>
+    // 🔑 주임님의 Firebase 프로젝트 설정 정보 연동
+    const firebaseConfig = {
+      apiKey: "AIzaSyDeKWMVbxfvO9SKjJXYCkuJrz630u6pxsk",
+      authDomain: "mungyeong-kiosk.firebaseapp.com",
+      databaseURL: "https://mungyeong-kiosk-default-rtdb.firebaseio.com",
+      projectId: "mungyeong-kiosk",
+      storageBucket: "mungyeong-kiosk.appspot.com",
+      messagingSenderId: "1020366726033",
+      appId: "1:1020366726033:web:04fc7e0638d1d0e40c3030",
+      measurementId: "G-8GSFNWLX5Q"
+    };
+
+    // Firebase 초기화 및 실시간 데이터베이스 연결
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
     const DB_KEYS = { survival: 'eco_srv_bookings', vr: 'eco_vr_bookings' };
     const CALL_KEYS = { survival: 'eco_survival_called_display', vr: 'eco_vr_called_display' };
 
@@ -219,7 +238,7 @@
     const $ = id => document.getElementById(id);
     function pad(n){ return String(n).padStart(3, '0'); }
 
-    // [핵심 추가] 직원 전용 스위치 제어 함수 (열고 닫기 토글)
+    // 직원 전용 스위치 제어 기능 (토글)
     function toggleAdminMode() {
       const btn = $('adminToggle');
       const controls = document.querySelectorAll('.admin-controls');
@@ -238,45 +257,48 @@
       }
     }
 
+    // 🚀 화면 로드 시 파이어베이스 실시간 데이터 연동 시작
     window.onload = function() {
-      if(!localStorage.getItem(CALL_KEYS.survival)) localStorage.setItem(CALL_KEYS.survival, 0);
-      if(!localStorage.getItem(CALL_KEYS.vr)) localStorage.setItem(CALL_KEYS.vr, 0);
+      // 1. 레이저 서바이벌 예약 데이터 실시간 감시
+      database.ref(DB_KEYS.survival).on('value', (snapshot) => {
+        const data = snapshot.val() || {};
+        totalCounts.survival = Object.keys(data).length;
+        $('svLastNo').textContent = pad(totalCounts.survival);
+      });
 
-      loadAndSyncData();
+      // 2. VR 체험존 예약 데이터 실시간 감시
+      database.ref(DB_KEYS.vr).on('value', (snapshot) => {
+        const data = snapshot.val() || {};
+        totalCounts.vr = Object.keys(data).length;
+        $('vrLastNo').textContent = pad(totalCounts.vr);
+      });
 
-      window.addEventListener('storage', (e) => {
-        if (e.key === DB_KEYS.survival || e.key === DB_KEYS.vr) loadAndSyncData();
-        if (e.key === CALL_KEYS.survival) {
-          calledNumbers.survival = Number(e.newValue || 0);
-          $('svCalledNo').textContent = pad(calledNumbers.survival);
-        }
-        if (e.key === CALL_KEYS.vr) {
-          calledNumbers.vr = Number(e.newValue || 0);
-          $('vrCalledNo').textContent = pad(calledNumbers.vr);
+      // 3. 레이저 서바이벌 호출 번호 실시간 감시
+      database.ref(CALL_KEYS.survival).on('value', (snapshot) => {
+        const prevNum = calledNumbers.survival;
+        calledNumbers.survival = Number(snapshot.val() || 0);
+        $('svCalledNo').textContent = pad(calledNumbers.survival);
+        
+        // 숫자가 증가했을 때만 음성 안내 실행
+        if (calledNumbers.survival > prevNum) {
+          playVoice('survival', calledNumbers.survival);
         }
       });
 
-      setInterval(() => loadAndSyncData(), 800);
+      // 4. VR 체험존 호출 번호 실시간 감시
+      database.ref(CALL_KEYS.vr).on('value', (snapshot) => {
+        const prevNum = calledNumbers.vr;
+        calledNumbers.vr = Number(snapshot.val() || 0);
+        $('vrCalledNo').textContent = pad(calledNumbers.vr);
+        
+        // 숫자가 증가했을 때만 음성 안내 실행
+        if (calledNumbers.vr > prevNum) {
+          playVoice('vr', calledNumbers.vr);
+        }
+      });
     };
 
-    function loadAndSyncData() {
-      try {
-        totalCounts.survival = Object.keys(JSON.parse(localStorage.getItem(DB_KEYS.survival) || '{}')).length;
-      } catch(e) { totalCounts.survival = 0; }
-
-      try {
-        totalCounts.vr = Object.keys(JSON.parse(localStorage.getItem(DB_KEYS.vr) || '{}')).length;
-      } catch(e) { totalCounts.vr = 0; }
-
-      calledNumbers.survival = Number(localStorage.getItem(CALL_KEYS.survival) || 0);
-      calledNumbers.vr = Number(localStorage.getItem(CALL_KEYS.vr) || 0);
-
-      $('svLastNo').textContent = pad(totalCounts.survival);
-      $('svCalledNo').textContent = pad(calledNumbers.survival);
-      $('vrLastNo').textContent = pad(totalCounts.vr);
-      $('vrCalledNo').textContent = pad(calledNumbers.vr);
-    }
-
+    // 음성 안내 및 딩동 알림음 기능
     function playVoice(type, num) {
       if (num === 0) return;
       try {
@@ -299,30 +321,26 @@
       }, 500);
     }
 
+    // 다음 번호 호출 (+1) -> Firebase 서버에 실시간 저장
     function callNext(type) {
-      loadAndSyncData();
       let curCalled = calledNumbers[type];
       let maxLimit = totalCounts[type];
 
       if (curCalled < maxLimit) {
         curCalled++;
-        localStorage.setItem(CALL_KEYS[type], curCalled);
-        calledNumbers[type] = curCalled;
-        $(type === 'survival' ? 'svCalledNo' : 'vrCalledNo').textContent = pad(curCalled);
-        playVoice(type, curCalled);
+        database.ref(CALL_KEYS[type]).set(curCalled);
       } else {
         const koName = (type === 'survival') ? '레이저 서바이벌' : 'VR 체험존';
         alert(`${koName}에 오늘 접수된 예약 건수가 없거나 마지막 번호입니다.`);
       }
     }
 
+    // 후퇴 (-1) -> Firebase 서버에 실시간 저장
     function callPrev(type) {
       let curCalled = calledNumbers[type];
       if (curCalled > 0) {
         curCalled--;
-        localStorage.setItem(CALL_KEYS[type], curCalled);
-        calledNumbers[type] = curCalled;
-        $(type === 'survival' ? 'svCalledNo' : 'vrCalledNo').textContent = pad(curCalled);
+        database.ref(CALL_KEYS[type]).set(curCalled);
       }
     }
   </script>
