@@ -119,7 +119,7 @@
     .mini-card p { font-size: 13px; color: var(--muted); font-weight: bold; margin-bottom: 4px; }
     .mini-card div { font-size: 28px; font-weight: 900; }
 
-    /* 🕹️ 직원 전용 제어 스위치 영역 (기본 숨김 처리) */
+    /* 🕹️ 직원 전용 제어 스위치 영역 */
     .control-row {
       display: none; /* 토글 켜기 전까지 완전 숨김 */
       grid-template-columns: 2fr 1fr;
@@ -164,49 +164,6 @@
 
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-  <script type="module">
-  // 1. 필요한 Firebase 기능 불러오기
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-  // 2. 내 Firebase 프로젝트 키값 설정 (보내주신 스크린샷 기준 주소입니다)
-  const firebaseConfig = {
-    apiKey: "AIzaSyDeKWmVbxfvO9SKjJXYCkuJrz630u6pxsk",
-    authDomain: "mungyeong-kiosk.firebaseapp.com",
-    databaseURL: "https://mungyeong-kiosk-default-rtdb.firebaseio.com",
-    projectId: "mungyeong-kiosk",
-    storageBucket: "mungyeong-kiosk.firebasestorage.app",
-    messagingSenderId: "1020366726033",
-    appId: "1:1020366726033:web:04fc7e0638d1d0e40c3030",
-    measurementId: "G-8GSFNWLX5Q"
-  };
-
-  // 3. Firebase 초기화 및 연결
-  const app = initializeApp(firebaseConfig);
-  const database = getDatabase(app);
-
-  // --- [A] 키오스크 파일(kiosk_final.html)에 들어갈 로직 ---
-  // 예약 버튼이 눌렸을 때 데이터베이스에 숫자를 저장하는 예시입니다.
-  // (실제 버튼 ID나 변수명에 맞게 매칭이 필요할 수 있습니다)
-  function uploadReservation(type, count) {
-    set(ref(database, 'reservations/' + type), {
-      count: count
-    });
-  }
-
-  // --- [B] 전광판 파일에 들어갈 로직 ---
-  // Firebase에 저장된 데이터가 바뀌면 전광판 화면도 실시간으로 자동으로 바뀝니다.
-  const vrCountRef = ref(database, 'reservations/vr');
-  onValue(vrCountRef, (snapshot) => {
-    const data = snapshot.val();
-    if(data) {
-      // 전광판 화면의 '금일 총 예약 건수' 숫자를 업데이트하는 코드
-      // (예시: 해당 숫자 ID가 total-count 일 때)
-      const element = document.getElementById('total-count');
-      if(element) element.innerText = data.count;
-    }
-  });
-</script>
 </head>
 <body>
 
@@ -256,9 +213,9 @@
   </div>
 
   <script>
-    // 🔑 주임님의 Firebase 프로젝트 설정 정보 연동
+    // 🔑 Firebase 프로젝트 설정 정보 연동 (호환 버전 싱글톤 통합)
     const firebaseConfig = {
-      apiKey: "AIzaSyDeKWMVbxfvO9SKjJXYCkuJrz630u6pxsk",
+      apiKey: "AIzaSyDeKWmVbxfvO9SKjJXYCkuJrz630u6pxsk",
       authDomain: "mungyeong-kiosk.firebaseapp.com",
       databaseURL: "https://mungyeong-kiosk-default-rtdb.firebaseio.com",
       projectId: "mungyeong-kiosk",
@@ -268,21 +225,35 @@
       measurementId: "G-8GSFNWLX5Q"
     };
 
-    // Firebase 초기화 및 실시간 데이터베이스 연결
+    // Firebase 초기화
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
+    // 데이터베이스 경로 키 정의
     const DB_KEYS = { survival: 'eco_srv_bookings', vr: 'eco_vr_bookings' };
     const CALL_KEYS = { survival: 'eco_survival_called_display', vr: 'eco_vr_called_display' };
 
     let totalCounts = { survival: 0, vr: 0 };
     let calledNumbers = { survival: 0, vr: 0 };
+    let isInitialLoad = { survival: true, vr: true }; // 첫 로드 시 전체 음성 오발송 방지용
+    let audioCtx = null;
 
     const $ = id => document.getElementById(id);
     function pad(n){ return String(n).padStart(3, '0'); }
 
+    // 오디오 컨텍스트 활성화 (브라우저 정책 대응)
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
     // 직원 전용 스위치 제어 기능 (토글)
     function toggleAdminMode() {
+      initAudio(); // 버튼 클릭 시 오디오 권한 획득
       const btn = $('adminToggle');
       const controls = document.querySelectorAll('.admin-controls');
       const isHidden = controls[0].style.display !== 'grid';
@@ -301,15 +272,15 @@
     }
 
     // 🚀 화면 로드 시 파이어베이스 실시간 데이터 연동 시작
-    window.onload = function() {
-      // 1. 레이저 서바이벌 예약 데이터 실시간 감시
+    window.addEventListener('DOMContentLoaded', () => {
+      // 1. 레이저 서바이벌 예약 데이터 실시간 감시 (키오스크 등록 건수)
       database.ref(DB_KEYS.survival).on('value', (snapshot) => {
         const data = snapshot.val() || {};
         totalCounts.survival = Object.keys(data).length;
         $('svLastNo').textContent = pad(totalCounts.survival);
       });
 
-      // 2. VR 체험존 예약 데이터 실시간 감시
+      // 2. VR 체험존 예약 데이터 실시간 감시 (키오스크 등록 건수)
       database.ref(DB_KEYS.vr).on('value', (snapshot) => {
         const data = snapshot.val() || {};
         totalCounts.vr = Object.keys(data).length;
@@ -322,10 +293,11 @@
         calledNumbers.survival = Number(snapshot.val() || 0);
         $('svCalledNo').textContent = pad(calledNumbers.survival);
         
-        // 숫자가 증가했을 때만 음성 안내 실행
-        if (calledNumbers.survival > prevNum) {
+        // 첫 로드가 아니고, 숫자가 증가했을 때만 음성 안내 실행
+        if (!isInitialLoad.survival && calledNumbers.survival > prevNum) {
           playVoice('survival', calledNumbers.survival);
         }
+        isInitialLoad.survival = false;
       });
 
       // 4. VR 체험존 호출 번호 실시간 감시
@@ -334,26 +306,32 @@
         calledNumbers.vr = Number(snapshot.val() || 0);
         $('vrCalledNo').textContent = pad(calledNumbers.vr);
         
-        // 숫자가 증가했을 때만 음성 안내 실행
-        if (calledNumbers.vr > prevNum) {
+        // 첫 로드가 아니고, 숫자가 증가했을 때만 음성 안내 실행
+        if (!isInitialLoad.vr && calledNumbers.vr > prevNum) {
           playVoice('vr', calledNumbers.vr);
         }
+        isInitialLoad.vr = false;
       });
-    };
+    });
 
     // 음성 안내 및 딩동 알림음 기능
     function playVoice(type, num) {
       if (num === 0) return;
+      
+      // 딩동 알림음 재생
       try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        initAudio();
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // 미(E) 음정
         gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
         osc.start(); osc.stop(audioCtx.currentTime + 0.15);
-      } catch(e) {}
+      } catch(e) {
+        console.log("오디오 재생 제한", e);
+      }
 
+      // 0.5초 뒤 TTS 음성 안내 안내
       setTimeout(() => {
         const koName = (type === 'survival') ? '레이저 서바이벌' : '브이알 체험존';
         const msg = `${koName}, ${num}번 대기자님 입장해 주시기 바랍니다.`;
@@ -366,6 +344,7 @@
 
     // 다음 번호 호출 (+1) -> Firebase 서버에 실시간 저장
     function callNext(type) {
+      initAudio();
       let curCalled = calledNumbers[type];
       let maxLimit = totalCounts[type];
 
@@ -380,6 +359,7 @@
 
     // 후퇴 (-1) -> Firebase 서버에 실시간 저장
     function callPrev(type) {
+      initAudio();
       let curCalled = calledNumbers[type];
       if (curCalled > 0) {
         curCalled--;
