@@ -822,16 +822,12 @@
     }
 
     function testSerialPrint() {
-      const testTxt = "--- PRINTER TEST ---\n문경에코월드 정상 출력\n--------------------\n";
+      const testTxt = "\n--- PRINTER TEST ---\n문경에코월드 하드웨어 링크\n정상 연동 테스트 완료\n--------------------\n\n\n\n";
       printViaSerial(testTxt);
     }
 
-    // [문법 완전 교정 및 통합 구현 완료] 최종 예약 및 영수증 발권 함수
-// [변수 추가] 1단계에서 발급받은 구글 웹 앱 URL 주소를 여기에 붙여넣으세요.
-    const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbymtgECIFgV0BYsEt4Ep4jkcDjSLuJHhBd1i7YGRtI7Pp5Zt7J0b2QBCHyq_P2ME2nQ/exec";
-
-    // 최종 예약 및 영수증 발권 함수 (구글 시트 연동 및 시리얼 프린터 로직 통합 완료)
-    function submitReservation(){
+    // [완전 복구 및 하드웨어 안전 이식 완료] 최종 예약 및 비동기 영수증 발권 제어 함수
+    async function submitReservation(){
       const name = $('inputName').value.trim();
       if(!name) {
         alert("대표자 성명을 입력해 주세요.");
@@ -841,7 +837,7 @@
       const uniqueKey = Date.now();
       let printText = "";
 
-      // 1. 선택 모드에 따라 데이터 로컬 축적 및 파이어베이스 송신
+      // 1. 선택 모드 분기 처리 및 구조 정립
       if(currentMode === "SURVIVAL") {
         const agreeText = isAgreeSrv ? "동의" : "비동의";
         srvBookings[`${selectedTime}-${selectedTeam}`] = {
@@ -885,31 +881,30 @@
           "발권시간: " + getNowDateTime() + "\n\n\n\n";
       }
 
-      // [신규 기능] 2. 구글 스프레드시트로 실시간 통계 데이터 전송 (백그라운드 비동기)
-      if (typeof GOOGLE_SHEET_API_URL !== "undefined" && GOOGLE_SHEET_API_URL && GOOGLE_SHEET_API_URL !== "여기에_발급받은_구글_웹앱_URL을_붙여넣으세요") {
-        fetch(GOOGLE_SHEET_API_URL, {
-          method: 'POST',
-          mode: 'no-cors', // CORS 보안 정책 우회
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: currentMode.toLowerCase(), // 'survival' 또는 'vr'
-            count: currentCount,             // 실제 동반 인원수 전송
-            status: 'waiting'
-          })
-        }).catch(err => console.error("구글 통계 데이터 전송 실패:", err));
-      }
-
-      // 3. 대시보드 새로고침 및 영수증 하드웨어 전송
+      // 2. 로컬 저장소 캐시 동기화
       renderDashboard();
-      printViaSerial(printText);
-      
-      alert("예약 신청 및 대기 번호표 출력이 완료되었습니다!");
-      goHome();
+
+      // 3. 하드웨어 포트 잠김 예방 모듈을 통한 물리 인쇄 실행
+      const isPrinted = await printViaSerial(printText);
+
+      if (isPrinted) {
+        alert("예약 신청 및 대기 번호표 출력이 완료되었습니다!");
+        goHome();
+      } else {
+        alert("🚨 프린터 인쇄 오류\n\n하드웨어 포트 연결(COM5)을 확인해 주시거나,\n인쇄 테스트가 활성화되어 있는지 점검하십시오.");
+      }
     }
 
-    // 영수증 프린터 COM5 Serial Web API 전송 함수 (기존 로직 보존)
+    // [독립 격리 보호 설계] Web Serial API 안전 통신 파이프라인 함수
     async function printViaSerial(text) {
+      let writer = null;
       try {
+        if (!navigator.serial) {
+          console.error("이 브라우저/환경은 Web Serial API를 지원하지 않거나 주소가 HTTPS 보안 연결이 아닙니다.");
+          return false;
+        }
+
+        // 포트가 없거나 끊긴 상태라면 다시 할당
         if (!serialPort) {
           const ports = await navigator.serial.getPorts();
           if (ports.length > 0) {
@@ -918,17 +913,41 @@
             serialPort = await navigator.serial.requestPort();
           }
         }
-        
-        if (!serialPort.readable) {
+
+        // 포트가 열려있지 않은 상태일 때만 open 실행 (중복 오픈 에러 방지)
+        if (!serialPort.writable) {
           await serialPort.open({ baudRate: 9600 });
         }
+
+        // 상단에 삽입된 라이브러리를 활용한 EUC-KR 한국어 바이너리 스트림 변환
+        let encodedData;
+        if (typeof window.TextEncoderEUCKR === "function") {
+          const encoder = new window.TextEncoderEUCKR();
+          encodedData = encoder.encode(text);
+        } else if (typeof window.euckrEncoder === "object" && window.euckrEncoder.encode) {
+          encodedData = window.euckrEncoder.encode(text);
+        } else {
+          encodedData = new TextEncoder().encode(text); 
+        }
+
+        writer = serialPort.writable.getWriter();
+        await writer.write(encodedData);
         
-        const encoder = new TextEncoderEUCKR();
-        const writer = serialPort.writable.getWriter();
-        await writer.write(encoder.encode(text));
-        writer.releaseLock();
+        return true;
       } catch (error) {
-        console.error("프린터 연동 실패 (시뮬레이터 환경 우회):", error);
+        console.error("프린터 하드웨어 통신 중 예외 발생:", error);
+        // 에러 발생 시 포트 객체를 오염된 것으로 간주하여 비워버림 (다음 인쇄 시 자가 치유)
+        serialPort = null;
+        return false;
+      } finally {
+        // [가장 중요] 성공 여부와 상관없이 무조건 락(Lock)을 풀어주어 다음 발권자가 사용할 수 있도록 복구
+        if (writer) {
+          try {
+            writer.releaseLock();
+          } catch(e) {
+            console.error("스트림 락 해제 실패:", e);
+          }
+        }
       }
     }
   </script>
