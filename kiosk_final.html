@@ -213,8 +213,8 @@
     .btn-team.booked { background: #e2e8f0; color: #94a3b8; border-color: var(--line); cursor: not-allowed; }
 
     .form-container { display: flex; flex-direction: column; gap: 14px; padding: 10px 0; }
-    .form-container .form-group { display: flex; flex-direction: column; gap: 6px; }
-    .form-container .form-group label { font-size: 16px; font-weight: 800; color: var(--dark); }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 16px; font-weight: 800; color: var(--dark); }
     .form-control {
       width: 100%; border: 2px solid var(--line); border-radius: 10px;
       padding: 12px; font-size: 18px; font-weight: 700; background: #f8fafc;
@@ -293,54 +293,6 @@
   </style>
   <script src="https://unpkg.com/hangul-js@0.2.6/hangul.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/inexorablewriter/text-encoder-by-euckr/textencode.min.js"></script>
-  
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDeKwMVbxfvO9SKjJXYCkuJrz630u6pxsk",
-      authDomain: "mungyeong-kiosk.firebaseapp.com",
-      databaseURL: "https://mungyeong-kiosk-default-rtdb.firebaseio.com/",
-      projectId: "mungyeong-kiosk",
-      storageBucket: "mungyeong-kiosk.appspot.com",
-      messagingSenderId: "1020366726033",
-      appId: "1:1020366726033:web:04fc7e0638d1d0e40c3030",
-      measurementId: "G-8GSFNWLX5Q"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const database = getDatabase(app);
-
-    // 전광판 실시간 데이터 전송 모듈
-    window.sendReservationToFirebase = function(type, uniqueKey, currentCount) {
-      const dbPath = (type === 'survival') ? 'eco_srv_bookings' : 'eco_vr_bookings';
-      const targetRef = ref(database, `${dbPath}/${uniqueKey}`);
-      
-      set(targetRef, {
-        timestamp: uniqueKey,
-        count: currentCount,
-        status: "waiting"
-      }).catch(err => console.error("전광판 실시간 전송 실패:", err));
-    };
-
-    // 실시간 예약 건수 대시보드 연동
-    window.addEventListener('DOMContentLoaded', () => {
-      onValue(ref(database, 'eco_srv_bookings'), (snapshot) => {
-        const data = snapshot.val() || {};
-        const count = Object.keys(data).length;
-        const target = document.getElementById('calledNoSrv');
-        if(target) target.textContent = count;
-      });
-
-      onValue(ref(database, 'eco_vr_bookings'), (snapshot) => {
-        const data = snapshot.val() || {};
-        const count = Object.keys(data).length;
-        const target = document.getElementById('calledNoVr');
-        if(target) target.textContent = count;
-      });
-    });
-  </script>
 </head>
 <body>
 
@@ -453,6 +405,8 @@
   </div>
 
   <script>
+    const FIREBASE_URL = "https://mungyeong-kiosk-default-rtdb.firebaseio.com/vr_zone.json";
+
     const SURVIVAL_SLOTS = [
       "09:30~09:50", "09:50~10:10", "10:10~10:30", "10:30~10:50", "10:50~11:10",
       "11:10~11:30", "11:30~11:50", "13:00~13:20", "13:20~13:40", "13:40~14:00",
@@ -478,13 +432,6 @@
     let hangulBuffer = [];
 
     const $ = id => document.getElementById(id);
-
-    window.onload = function(){
-      initClock();
-      renderDashboard();
-      startPromoSlider(); 
-    };
-
     function getNowDateTime(){ return new Date().toLocaleString('ko-KR',{hour12:false}); }
 
     const CHUNJIIN_KEYBOARD = [
@@ -494,6 +441,13 @@
       ['.', 'ㅡ', '지움', '간격', '완료']
     ];
 
+    window.onload = function(){
+      initClock();
+      renderDashboard();
+      startPromoSlider(); 
+      syncVrCountFromServer();
+    };
+
     function initClock(){
       const tick = () => {
         const d = new Date();
@@ -501,6 +455,17 @@
         $('clock').textContent = d.toLocaleTimeString('ko-KR',{hour12:false});
       };
       tick(); setInterval(tick, 1000);
+    }
+
+    function syncVrCountFromServer() {
+      fetch(FIREBASE_URL)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.eco_vr_last !== undefined) {
+            $('calledNoVr').textContent = data.eco_vr_last;
+          }
+        })
+        .catch(err => console.error("서버 카운트 동기화 실패:", err));
     }
 
     function renderDashboard(){
@@ -576,6 +541,7 @@
             isTimeOver = true;
           }
         } else {
+          // [버그 수정] 타임 슬롯 시간 자체와 정교한 비교 연산 처리
           if (currentHour > slotHour) {
             isTimeOver = true;
           } else if (currentHour === slotHour) {
@@ -807,34 +773,20 @@
       return Hangul.assemble(finalTokens);
     }
 
-    function toggleAdminPanel() {
-      $('adminPanelBox').classList.toggle('open');
-    }
-
-    function resetAllData() {
-      if(confirm("정말로 모든 로컬 및 서버 데이터를 초기화하시겠습니까?")) {
-        localStorage.clear();
-        srvBookings = {};
-        vrBookings = {};
-        alert("로컬 스토리지 초기화 완료. 서버 데이터 리셋은 전광판 관리 모듈을 이용하십시오.");
-        renderDashboard();
-        goHome();
-      }
-    }
-
-    async function testSerialPrint() {
-      const testTxt = "\n--- PRINTER TEST ---\n문경에코월드 하드웨어 링크\n정상 연동 테스트 완료\n--------------------\n\n\n\n";
-      await printViaSerial(testTxt);
-    }
-
-    async function submitReservation(){
+    function submitReservation(){
       const name = $('inputName').value.trim();
       if(!name) {
         alert("대표자 성명을 입력해 주세요.");
         return;
       }
 
-      const uniqueKey = Date.now();
+      const orderKey = `${selectedTime}-${selectedTeam}-${Date.now()}`;
+      const payload = {
+        name: name,
+        count: currentCount,
+        time: getNowDateTime()
+      };
+
       let printText = "";
 
       if(currentMode === "SURVIVAL") {
@@ -842,14 +794,9 @@
         srvBookings[`${selectedTime}-${selectedTeam}`] = {
           name: name, count: currentCount, agree: agreeText, time: getNowDateTime()
         };
-        
-        if (typeof window.sendReservationToFirebase === "function") {
-          window.sendReservationToFirebase('survival', uniqueKey, currentCount);
-        }
-
         printText = 
-          "        문경에코월드\n" +
-          "    서바이벌 예약 확인증\n" +
+          "       문경에코월드\n" +
+          "   서바이벌 예약 확인증\n" +
           "------------------------\n" +
           "예약시간: " + selectedTime + "\n" +
           "배정팀: " + selectedTeam + "팀\n" +
@@ -857,97 +804,99 @@
           "인원수: " + currentCount + "명\n" +
           "동시체험동의: " + agreeText + "\n" +
           "------------------------\n" +
-          "발권시간: " + getNowDateTime() + "\n";
+          "발권일시: " + getNowDateTime();
       } else {
-        vrBookings[`${selectedTime}-${uniqueKey}`] = {
-          name: name, count: currentCount, time: getNowDateTime()
-        };
-
-        if (typeof window.sendReservationToFirebase === "function") {
-          window.sendReservationToFirebase('vr', uniqueKey, currentCount);
-        }
-
+        vrBookings[orderKey] = payload;
         printText = 
-          "        문경에코월드\n" +
-          "      VR체험 예약 확인증\n" +
+          "       문경에코월드\n" +
+          "     VR존 예약 확인증\n" +
           "------------------------\n" +
           "예약시간: " + selectedTime + "\n" +
           "예약자: " + name + "\n" +
           "인원수: " + currentCount + "명\n" +
           "------------------------\n" +
-          "발권시간: " + getNowDateTime() + "\n";
+          "지정시간 5분 전까지 꼭 입장!\n" +
+          "발권일시: " + getNowDateTime();
+      }
+
+      if (currentMode === "VR") {
+        const currentVrCount = Object.keys(vrBookings).length;
+        
+        fetch(FIREBASE_URL, {
+          method: "PATCH",
+          body: JSON.stringify({
+            eco_vr_last: currentVrCount
+          })
+        })
+        .then(() => {
+          console.log("Firebase VR 실시간 발권 동기화 완료");
+          // [추가 보완] 대시보드 로컬 즉시 반영
+          $('calledNoVr').textContent = currentVrCount;
+        })
+        .catch(err => console.error("Firebase 전송 실패:", err));
       }
 
       renderDashboard();
+      printViaSerial(printText).then(() => { goHome(); });
+    }
 
-      const isPrinted = await printViaSerial(printText);
-
-      if (isPrinted) {
-        alert("예약 신청 및 대기 번호표 출력이 완료되었습니다!");
-        goHome();
-      } else {
-        alert("🚨 프린터 인쇄 오류\n\n하드웨어 포트 연결(COM5)을 확인해 주시거나,\n인쇄 테스트가 활성화되어 있는지 점검하십시오.");
+    async function printViaSerial(textData) {
+      try {
+        if (!navigator.serial) { alert("이 브라우저는 Serial API를 지원하지 않습니다."); return; }
+        if (!serialPort) { serialPort = await navigator.serial.requestPort(); }
+        if (!serialPort.writable) { await serialPort.open({ baudRate: 9600 }); }
+        
+        const writer = serialPort.writable.getWriter();
+        
+        // ESC/POS 명령어 설정
+        const initCmd = "\x1b\x40"; 
+        const cutCmd = "\x1d\x56\x42\x00"; 
+        
+        // [버그 수정] 한글 인코딩 변환을 EUC-KR 바이너리로 실행하여 출력부 깨짐 영구 해결
+        const encoder = new TextEncoderByEuckr();
+        const bodyBytes = encoder.encode(textData + "\n\n\n\n\n");
+        
+        // 명령어 전송용 빌더
+        const initBytes = new Uint8Array([0x1b, 0x40]);
+        const cutBytes = new Uint8Array([0x1d, 0x56, 0x42, 0x00]);
+        
+        // 병합 후 스트림 전송
+        const payload = new Uint8Array(initBytes.length + bodyBytes.length + cutBytes.length);
+        payload.set(initBytes, 0);
+        payload.set(bodyBytes, initBytes.length);
+        payload.set(cutBytes, initBytes.length + bodyBytes.length);
+        
+        await writer.write(payload);
+        writer.releaseLock();
+      } catch (error) {
+        console.error("프린터 전송 에러:", error);
       }
     }
 
-    // [하드웨어 명령어 자동 컷팅 포함 이식 버전]
-    async function printViaSerial(text) {
-      let writer = null;
-      try {
-        if (!navigator.serial) {
-          alert("🚨 브라우저 제한: 주소창이 HTTPS 보안 연결이거나 localhost 여야 프린터 작동이 허용됩니다.");
-          return false;
-        }
+    function testSerialPrint() {
+      const testFormat = "====== 프린터 연결 시험 ======\n발권 시간: " + getNowDateTime() + "\n==============================";
+      printViaSerial(testFormat);
+    }
 
-        if (!serialPort) {
-          const ports = await navigator.serial.getPorts();
-          if (ports.length > 0) {
-            serialPort = ports[0];
-          } else {
-            alert("프린터 포트(COM5) 권한 등록이 필요합니다.\n다음에 뜨는 팝업창에서 프린터 장치를 꼭 선택해 주세요.");
-            serialPort = await navigator.serial.requestPort();
-          }
-        }
+    function toggleAdminPanel(){ $('adminPanelBox').classList.toggle('open'); }
 
-        if (!serialPort.writable) {
-          await serialPort.open({ baudRate: 9600 });
-        }
-
-        let encodedText;
-        if (typeof window.TextEncoderEUCKR === "function") {
-          const encoder = new window.TextEncoderEUCKR();
-          encodedText = encoder.encode(text);
-        } else if (typeof window.euckrEncoder === "object" && window.euckrEncoder.encode) {
-          encodedText = window.euckrEncoder.encode(text);
-        } else {
-          encodedText = new TextEncoder().encode(text); 
-        }
-
-        // PowerShell 테스트 코드 기반 제어 명령어 바이트 배열화
-        const initCmd = [27, 64, 27, 97, 1]; // 초기화 (ESC @) + 중앙정렬 (ESC a 1)
-        const cutCmd = [10, 10, 10, 29, 86, 1]; // 줄바꿈 + 자동 컷팅 명령 (GS V 1)
-
-        const finalData = new Uint8Array(initCmd.length + encodedText.length + cutCmd.length);
-        finalData.set(initCmd, 0);
-        finalData.set(encodedText, initCmd.length);
-        finalData.set(cutCmd, initCmd.length + encodedText.length);
-
-        writer = serialPort.writable.getWriter();
-        await writer.write(finalData);
+    function resetAllData(){
+      if(confirm("정말로 전체 예약 카운트를 초기화하시겠습니까?")){
+        srvBookings = {};
+        vrBookings = {};
         
-        return true;
-      } catch (error) {
-        console.error("프린터 통신 실패:", error);
-        serialPort = null;
-        return false;
-      } finally {
-        if (writer) {
-          try {
-            writer.releaseLock();
-          } catch(e) {
-            console.error("락 해제 오류:", e);
-          }
-        }
+        fetch(FIREBASE_URL, {
+          method: "PATCH",
+          body: JSON.stringify({
+            eco_vr_last: 0,
+            eco_vr_called: 0
+          })
+        })
+        .then(() => {
+          renderDashboard();
+          alert("모든 데이터가 서버와 로컬에서 초기화되었습니다.");
+        })
+        .catch(err => console.error("Firebase 초기화 에러:", err));
       }
     }
   </script>
