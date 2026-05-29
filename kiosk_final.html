@@ -19,13 +19,13 @@
       --ok:#22c55e;
     }
     *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family:'Pretendard','Noto Sans KR',sans-serif;
-      background:var(--bg);
-      color:var(--ink);
-      user-select: none;
-      overflow:hidden;
+    body{\r
+      margin:0;\r
+      font-family:'Pretendard','Noto Sans KR',sans-serif;\r
+      background:var(--bg);\r
+      color:var(--ink);\r
+      user-select: none;\r
+      overflow:hidden;\r
     }
 
     .wrap{
@@ -36,17 +36,17 @@
       align-items:center;
       padding:10px;
     }
-    .screen{
-      width:min(100%,720px);
-      height:min(100%,1280px);
-      background:var(--card);
-      border-radius:24px;
-      box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);
-      padding:24px;
-      display:flex;
-      flex-direction:column;
-      position:relative;
-      overflow:hidden;
+    .screen{\r
+      width:min(100%,720px);\r
+      height:min(100%,1280px);\r
+      background:var(--card);\r
+      border-radius:24px;\r
+      box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);\r
+      padding:24px;\r
+      display:flex;\r
+      flex-direction:column;\r
+      position:relative;\r
+      overflow:hidden;\r
     }
 
     .header{
@@ -312,7 +312,6 @@
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
 
-    // 전광판 실시간 데이터 전송 모듈
     window.sendReservationToFirebase = function(type, uniqueKey, currentCount) {
       const dbPath = (type === 'survival') ? 'eco_srv_bookings' : 'eco_vr_bookings';
       const targetRef = ref(database, `${dbPath}/${uniqueKey}`);
@@ -324,7 +323,6 @@
       }).catch(err => console.error("전광판 실시간 전송 실패:", err));
     };
 
-    // 실시간 예약 건수 대시보드 연동
     window.addEventListener('DOMContentLoaded', () => {
       onValue(ref(database, 'eco_srv_bookings'), (snapshot) => {
         const data = snapshot.val() || {};
@@ -543,7 +541,8 @@
     function goHome(){ switchPage('page-home'); }
     function goBackToTime(){ switchPage('page-time-select'); buildTimeGrid(); }
 
-    function openReservationSetup(mode) {
+    // 대소문자 불일치 해결을 위한 랩핑 함수 매핑
+    window.openReservationSetup = function(mode) {
       currentMode = mode;
       if(mode === "SURVIVAL") {
         $('timePageMainTitle').textContent = "레이저 서바이벌 시간 및 팀 선택";
@@ -807,11 +806,11 @@
       return Hangul.assemble(finalTokens);
     }
 
-    function toggleAdminPanel() {
+    window.toggleAdminPanel = function() {
       $('adminPanelBox').classList.toggle('open');
     }
 
-    function resetAllData() {
+    window.resetAllData = function() {
       if(confirm("정말로 모든 로컬 및 서버 데이터를 초기화하시겠습니까?")) {
         localStorage.clear();
         srvBookings = {};
@@ -822,12 +821,12 @@
       }
     }
 
-    async function testSerialPrint() {
+    window.testSerialPrint = async function() {
       const testTxt = "\n--- PRINTER TEST ---\n문경에코월드 하드웨어 링크\n정상 연동 테스트 완료\n--------------------\n";
       await printViaSerial(testTxt);
     }
 
-    async function submitReservation(){
+    window.submitReservation = async function(){
       const name = $('inputName').value.trim();
       if(!name) {
         alert("대표자 성명을 입력해 주세요.");
@@ -890,8 +889,7 @@
       }
     }
 
-    // [하드웨어 완전 제어 + 파워쉘 규격 949 한글 통합 인코딩 최종 버전]
-// [하드웨어 완전 제어 + 통신 잠김 버그 해결 최종본]
+    // 주임님 맞춤형 통합 완벽 제어 프린트 모듈 연동
     async function printViaSerial(text) {
       let writer = null;
       try {
@@ -910,12 +908,10 @@
           }
         }
 
-        // open 상태 예외 처리 방식 안정화
         if (serialPort && !serialPort.writable) {
           await serialPort.open({ baudRate: 9600 });
         }
 
-        // EUC-KR / CP949 한국어 데이터 스트림 인코딩 변환
         let encodedText;
         if (typeof window.TextEncoderEUCKR === "function") {
           const encoder = new window.TextEncoderEUCKR();
@@ -926,23 +922,19 @@
           encodedText = new TextEncoder().encode(text); 
         }
 
-        // 주임님 장비에 100% 매칭되는 기존 파워쉘 제어 코드 규격 그대로 유지
-        const initCmd = new Uint8Array([27, 64, 27, 97, 1]);     // 초기화 + 중앙 정렬
-        const cutCmd = new Uint8Array([10, 10, 10, 10, 29, 86, 1]); // 여백 생성 + 자동 컷팅
+        const initCmd = new Uint8Array([27, 64, 27, 97, 1]);     
+        const cutCmd = new Uint8Array([10, 10, 10, 10, 29, 86, 1]); 
 
-        // 바이너리 데이터 패킷 완전 병합 (글자 깨짐 및 누락 방지)
         const finalData = new Uint8Array(initCmd.length + encodedText.length + cutCmd.length);
         finalData.set(initCmd, 0);
         finalData.set(encodedText, initCmd.length);
         finalData.set(cutCmd, initCmd.length + encodedText.length);
 
-        // 스트림 라이터 열기 및 데이터 전송
         writer = serialPort.writable.getWriter();
         await writer.write(finalData);
         
-        // [핵심 버그 수정] 전송 완료 후 명시적 세션 종료 (포트 락 잠김 원천 폐쇄)
         await writer.close();
-        writer = null; // 중복 해제 방지
+        writer = null; 
         
         return true;
       } catch (error) {
@@ -962,3 +954,6 @@
         }
       }
     }
+  </script>
+</body>
+</html>
