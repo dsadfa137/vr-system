@@ -823,7 +823,7 @@
     }
 
     async function testSerialPrint() {
-      const testTxt = "\n--- PRINTER TEST ---\n문경에코월드 하드웨어 링크\n정상 연동 테스트 완료\n--------------------\n\n\n\n";
+      const testTxt = "\n--- PRINTER TEST ---\n문경에코월드 하드웨어 링크\n정상 연동 테스트 완료\n--------------------\n";
       await printViaSerial(testTxt);
     }
 
@@ -848,8 +848,8 @@
         }
 
         printText = 
-          "        문경에코월드\n" +
-          "    서바이벌 예약 확인증\n" +
+          "문경에코월드\n" +
+          "서바이벌 예약 확인증\n" +
           "------------------------\n" +
           "예약시간: " + selectedTime + "\n" +
           "배정팀: " + selectedTeam + "팀\n" +
@@ -868,8 +868,8 @@
         }
 
         printText = 
-          "        문경에코월드\n" +
-          "      VR체험 예약 확인증\n" +
+          "문경에코월드\n" +
+          "VR체험 예약 확인증\n" +
           "------------------------\n" +
           "예약시간: " + selectedTime + "\n" +
           "예약자: " + name + "\n" +
@@ -890,7 +890,7 @@
       }
     }
 
-    // [하드웨어 명령어 자동 컷팅 포함 이식 버전]
+    // [하드웨어 완전 제어 + 파워쉘 규격 949 한글 통합 인코딩 최종 버전]
     async function printViaSerial(text) {
       let writer = null;
       try {
@@ -909,10 +909,12 @@
           }
         }
 
-        if (!serialPort.writable) {
+        // [중요 문법 수정] open 상태 예외 처리 방식 안정화
+        if (serialPort && !serialPort.writable) {
           await serialPort.open({ baudRate: 9600 });
         }
 
+        // EUC-KR / CP949 한국어 데이터 스트림 인코딩 변환
         let encodedText;
         if (typeof window.TextEncoderEUCKR === "function") {
           const encoder = new window.TextEncoderEUCKR();
@@ -923,10 +925,13 @@
           encodedText = new TextEncoder().encode(text); 
         }
 
-        // PowerShell 테스트 코드 기반 제어 명령어 바이트 배열화
-        const initCmd = [27, 64, 27, 97, 1]; // 초기화 (ESC @) + 중앙정렬 (ESC a 1)
-        const cutCmd = [10, 10, 10, 29, 86, 1]; // 줄바꿈 + 자동 컷팅 명령 (GS V 1)
+        // 파워쉘 제어 코드 100% 매칭 바이트 어레이화
+        // [27, 64] -> ESC @ (초기화) | [27, 97, 1] -> ESC a 1 (중앙 정렬)
+        const initCmd = new Uint8Array([27, 64, 27, 97, 1]);
+        // [10 x 4] -> 줄바꿈 여백 | [29, 86, 1] -> GS V 1 (자동 종이 컷팅 기능)
+        const cutCmd = new Uint8Array([10, 10, 10, 10, 29, 86, 1]);
 
+        // 바이너리 데이터 패킷 완전 병합 (성능 향상 및 글자 깨짐 방지)
         const finalData = new Uint8Array(initCmd.length + encodedText.length + cutCmd.length);
         finalData.set(initCmd, 0);
         finalData.set(encodedText, initCmd.length);
@@ -935,9 +940,16 @@
         writer = serialPort.writable.getWriter();
         await writer.write(finalData);
         
+        // 전송 완료 후 명시적 세션 종료 (포트 락 잠김 원천 폐쇄)
+        await writer.close();
+        writer = null;
+        
         return true;
       } catch (error) {
         console.error("프린터 통신 실패:", error);
+        if (writer) {
+          try { writer.releaseLock(); } catch(e) {}
+        }
         serialPort = null;
         return false;
       } finally {
