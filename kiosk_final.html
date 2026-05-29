@@ -827,6 +827,10 @@
     }
 
     // [문법 완전 교정 및 통합 구현 완료] 최종 예약 및 영수증 발권 함수
+// [변수 추가] 1단계에서 발급받은 구글 웹 앱 URL 주소를 여기에 붙여넣으세요.
+    const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbymtgECIFgV0BYsEt4Ep4jkcDjSLuJHhBd1i7YGRtI7Pp5Zt7J0b2QBCHyq_P2ME2nQ/exec";
+
+    // 최종 예약 및 영수증 발권 함수 (구글 시트 연동 및 시리얼 프린터 로직 통합 완료)
     function submitReservation(){
       const name = $('inputName').value.trim();
       if(!name) {
@@ -872,7 +876,7 @@
         printText = 
           "\n" +
           "        문경에코월드\n" +
-          "      VR존 예약 확인증\n" +
+          "      VR체험 예약 확인증\n" +
           "------------------------\n" +
           "예약시간: " + selectedTime + "\n" +
           "예약자: " + name + "\n" +
@@ -881,7 +885,21 @@
           "발권시간: " + getNowDateTime() + "\n\n\n\n";
       }
 
-      // 2. 대시보드 새로고침 및 영수증 하드웨어 전송
+      // [신규 기능] 2. 구글 스프레드시트로 실시간 통계 데이터 전송 (백그라운드 비동기)
+      if (typeof GOOGLE_SHEET_API_URL !== "undefined" && GOOGLE_SHEET_API_URL && GOOGLE_SHEET_API_URL !== "여기에_발급받은_구글_웹앱_URL을_붙여넣으세요") {
+        fetch(GOOGLE_SHEET_API_URL, {
+          method: 'POST',
+          mode: 'no-cors', // CORS 보안 정책 우회
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: currentMode.toLowerCase(), // 'survival' 또는 'vr'
+            count: currentCount,             // 실제 동반 인원수 전송
+            status: 'waiting'
+          })
+        }).catch(err => console.error("구글 통계 데이터 전송 실패:", err));
+      }
+
+      // 3. 대시보드 새로고침 및 영수증 하드웨어 전송
       renderDashboard();
       printViaSerial(printText);
       
@@ -889,7 +907,7 @@
       goHome();
     }
 
-    // 영수증 프린터 COM5 Serial Web API 전송 함수
+    // 영수증 프린터 COM5 Serial Web API 전송 함수 (기존 로직 보존)
     async function printViaSerial(text) {
       try {
         if (!serialPort) {
