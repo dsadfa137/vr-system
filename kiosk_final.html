@@ -822,8 +822,11 @@
     }
 
     window.testSerialPrint = async function() {
+      // 1. 변수 이름은 testTxt 로 만듦
       const testTxt = "\n--- PRINTER TEST ---\n문경에코월드 하드웨어 링크\n정상 연동 테스트 완료\n--------------------\n";
-      await printViaSerial(testTxt);
+      
+      // 2. 하지만 보낼 때는 존재하지 않는 testTxtData를 보내서 에러 발생!
+      await printViaSerial(testTxtData); 
     }
 
     window.submitReservation = async function(){
