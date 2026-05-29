@@ -822,11 +822,9 @@
     }
 
     window.testSerialPrint = async function() {
-      // 1. 변수 이름은 testTxt 로 만듦
+      // 변수 이름을 일치시켜 줍니다 (testTxt)
       const testTxt = "\n--- PRINTER TEST ---\n문경에코월드 하드웨어 링크\n정상 연동 테스트 완료\n--------------------\n";
-      
-      // 2. 하지만 보낼 때는 존재하지 않는 testTxtData를 보내서 에러 발생!
-      await printViaSerial(testTxtData); 
+      await printViaSerial(testTxt); 
     }
 
     window.submitReservation = async function(){
