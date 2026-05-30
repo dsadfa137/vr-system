@@ -24,12 +24,10 @@ while ($listener.IsListening) {
 
         if ($request.Url.AbsolutePath -eq '/print') {
             $number = $request.QueryString['number']
-            $service = $request.QueryString['service']
-            $name = $request.QueryString['name']
-            $time = $request.QueryString['time']
-            $count = $request.QueryString['count']
             $mode = $request.QueryString['mode']
+            $time = $request.QueryString['time']
             $team = $request.QueryString['team']
+            $count = $request.QueryString['count']
             $agree = $request.QueryString['agree']
 
             if ([string]::IsNullOrWhiteSpace($number)) {
@@ -45,7 +43,6 @@ while ($listener.IsListening) {
             if (Test-Path $ticketScript) {
                 powershell.exe -ExecutionPolicy Bypass -File $ticketScript `
                  -mode $mode `
-                 -name $name `
                  -time $time `
                  -team $team `
                  -count $count `
