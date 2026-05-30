@@ -895,7 +895,13 @@
 
       renderDashboard();
 
-      const isPrinted = await printViaSerial(printText);
+      const isPrinted = await printLocalTicket({
+  service: currentMode,
+  number: uniqueKey,
+  name: name,
+  time: selectedTime,
+  count: currentCount
+});
 
       if (isPrinted) {
         alert("예약 신청 및 대기 번호표 출력이 완료되었습니다!");
