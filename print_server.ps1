@@ -34,8 +34,8 @@ while ($listener.IsListening) {
                 $number = '001'
             }
 
-            if ([string]::IsNullOrWhiteSpace($service)) {
-                $service = 'TICKET'
+            if ([string]::IsNullOrWhiteSpace($mode)) {
+                $mode = 'VR'
             }
 
             $ticketScript = Join-Path $PSScriptRoot 'print_ticket.ps1'
