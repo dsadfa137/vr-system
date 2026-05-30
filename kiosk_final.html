@@ -842,6 +842,30 @@
   }
 }
 
+async function printLocalTicket(ticket) {
+  try {
+    const params = new URLSearchParams({
+      mode: ticket.mode || "",
+      name: ticket.name || "",
+      time: ticket.time || "",
+      team: ticket.team || "",
+      count: ticket.count || "",
+      agree: ticket.agree || "",
+      number: ticket.number || ""
+    });
+
+    const response = await fetch("http://127.0.0.1:8787/print?" + params.toString());
+
+    if (!response.ok) {
+      throw new Error("LOCAL_PRINT_SERVER_ERROR");
+    }
+
+    return true;
+  } catch (error) {
+    console.error("예약 번호표 출력 실패:", error);
+    return false;
+  }
+}
     async function submitReservation(){
       const name = $('inputName').value.trim();
       if(!name) {
@@ -896,11 +920,13 @@
       renderDashboard();
 
       const isPrinted = await printLocalTicket({
-  service: currentMode,
-  number: uniqueKey,
+  mode: currentMode,
   name: name,
   time: selectedTime,
-  count: currentCount
+  team: selectedTeam,
+  count: currentCount,
+  agree: currentMode === "SURVIVAL" ? (isAgreeSrv ? "동의" : "비동의") : "",
+  number: String(uniqueKey)
 });
 
       if (isPrinted) {
