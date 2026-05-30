@@ -1,0 +1,69 @@
+$listener = New-Object System.Net.HttpListener
+$listener.Prefixes.Add('http://127.0.0.1:8787/')
+$listener.Start()
+
+Write-Host 'Kiosk print server started.'
+Write-Host 'Test URL: http://127.0.0.1:8787/print?number=001'
+Write-Host 'Press Ctrl + C to stop.'
+
+while ($listener.IsListening) {
+    try {
+        $context = $listener.GetContext()
+        $request = $context.Request
+        $response = $context.Response
+
+        $response.Headers.Add('Access-Control-Allow-Origin', '*')
+        $response.Headers.Add('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        $response.Headers.Add('Access-Control-Allow-Headers', 'Content-Type')
+
+        if ($request.HttpMethod -eq 'OPTIONS') {
+            $response.StatusCode = 200
+            $response.Close()
+            continue
+        }
+
+        if ($request.Url.AbsolutePath -eq '/print') {
+            $number = $request.QueryString['number']
+            $service = $request.QueryString['service']
+            $name = $request.QueryString['name']
+            $time = $request.QueryString['time']
+            $count = $request.QueryString['count']
+
+            if ([string]::IsNullOrWhiteSpace($number)) {
+                $number = '001'
+            }
+
+            if ([string]::IsNullOrWhiteSpace($service)) {
+                $service = 'TICKET'
+            }
+
+            $ticketScript = Join-Path $PSScriptRoot 'print_ticket.ps1'
+
+            if (Test-Path $ticketScript) {
+                powershell.exe -ExecutionPolicy Bypass -File $ticketScript
+            }
+            else {
+                Write-Host 'print_ticket.ps1 not found.'
+            }
+
+            $message = 'PRINT_OK'
+            $buffer = [System.Text.Encoding]::UTF8.GetBytes($message)
+
+            $response.StatusCode = 200
+            $response.ContentType = 'text/plain; charset=utf-8'
+            $response.OutputStream.Write($buffer, 0, $buffer.Length)
+            $response.Close()
+        }
+        else {
+            $response.StatusCode = 404
+            $message = 'NOT_FOUND'
+            $buffer = [System.Text.Encoding]::UTF8.GetBytes($message)
+            $response.OutputStream.Write($buffer, 0, $buffer.Length)
+            $response.Close()
+        }
+    }
+    catch {
+        Write-Host 'ERROR'
+        Write-Host $_.Exception.Message
+    }
+}
