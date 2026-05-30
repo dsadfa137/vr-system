@@ -28,6 +28,9 @@ while ($listener.IsListening) {
             $name = $request.QueryString['name']
             $time = $request.QueryString['time']
             $count = $request.QueryString['count']
+            $mode = $request.QueryString['mode']
+            $team = $request.QueryString['team']
+            $agree = $request.QueryString['agree']
 
             if ([string]::IsNullOrWhiteSpace($number)) {
                 $number = '001'
@@ -40,7 +43,14 @@ while ($listener.IsListening) {
             $ticketScript = Join-Path $PSScriptRoot 'print_ticket.ps1'
 
             if (Test-Path $ticketScript) {
-                powershell.exe -ExecutionPolicy Bypass -File $ticketScript
+                powershell.exe -ExecutionPolicy Bypass -File $ticketScript `
+                 -mode $mode `
+                 -name $name `
+                 -time $time `
+                 -team $team `
+                 -count $count `
+                 -agree $agree `
+                 -number $number
             }
             else {
                 Write-Host 'print_ticket.ps1 not found.'
