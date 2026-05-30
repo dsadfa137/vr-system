@@ -1,49 +1,77 @@
 param(
-
-    [string]$number = "001",
-
-    [string]$service = "VR체험"
-
+    [string]$mode = "VR",
+    [string]$name = "",
+    [string]$time = "",
+    [string]$team = "",
+    [string]$count = "",
+    [string]$agree = "",
+    [string]$number = "001"
 )
+$portName = "COM5"
+$baudRate = 9600
 
-
-
-$port = New-Object System.IO.Ports.SerialPort COM5,9600,None,8,one
-
+$port = New-Object System.IO.Ports.SerialPort
+$port.PortName = $portName
+$port.BaudRate = $baudRate
+$port.Parity = [System.IO.Ports.Parity]::None
+$port.DataBits = 8
+$port.StopBits = [System.IO.Ports.StopBits]::One
+$port.Handshake = [System.IO.Ports.Handshake]::None
 $port.Encoding = [System.Text.Encoding]::GetEncoding(949)
 
-$port.Open()
+try {
+    $port.Open()
 
+    # Initialize printer
+    $port.Write([char]27 + "@")
 
+    # Center align
+    $port.Write([char]27 + "a" + [char]1)
 
-$port.Write([char]27 + "@")
+    # Title
+    $port.WriteLine("------------------------")
+    $port.WriteLine("MUNGYEONG ECO WORLD")
+    $port.WriteLine("TICKET")
+    $port.WriteLine("------------------------")
+    $port.WriteLine("")
 
-$port.Write([char]27 + "a" + [char]1)
+    # Ticket content
+    if ($mode -eq "SURVIVAL") {
+    $serviceText = "SURVIVAL"
+} else {
+    $serviceText = "VR"
+}
 
+$port.WriteLine("Number : " + $number)
+$port.WriteLine("Service: " + $serviceText)
+$port.WriteLine("Time   : " + $time)
 
+if ($mode -eq "SURVIVAL") {
+    $port.WriteLine("Team   : " + $team)
+    $port.WriteLine("Agree  : " + $agree)
+}
 
-$port.WriteLine("문경에코월드")
+$port.WriteLine("Name   : " + $name)
+$port.WriteLine("Count  : " + $count)
+$port.WriteLine("Issued : " + (Get-Date).ToString("yyyy-MM-dd HH:mm:ss"))
+    $port.WriteLine("")
 
-$port.WriteLine("번호표")
+    $port.WriteLine("Please wait for your call.")
+    $port.WriteLine("")
+    $port.WriteLine("")
+    $port.WriteLine("")
 
-$port.WriteLine("")
+    # Cut paper
+    $port.Write([char]29 + "V" + [char]1)
 
-$port.WriteLine($number)
-
-$port.WriteLine("")
-
-$port.WriteLine($service)
-
-$port.WriteLine((Get-Date).ToString("yyyy-MM-dd HH:mm:ss"))
-
-$port.WriteLine("")
-
-$port.WriteLine("")
-
-$port.WriteLine("")
-
-
-
-$port.Write([char]29 + "V" + [char]1)
-
-$port.Close() 
+    Start-Sleep -Milliseconds 500
+}
+catch {
+    Write-Host "PRINT_ERROR"
+    Write-Host $_.Exception.Message
+}
+finally {
+    if ($port.IsOpen) {
+        $port.Close()
+    }
+}
