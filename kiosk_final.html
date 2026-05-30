@@ -823,9 +823,24 @@
     }
 
     async function testSerialPrint() {
-      const testTxt = "\n--- PRINTER TEST ---\n문경에코월드 하드웨어 링크\n정상 연동 테스트 완료\n--------------------\n\n\n\n";
-      await printViaSerial(testTxt);
+  try {
+    const response = await fetch("http://127.0.0.1:8787/print?number=001&service=VR");
+
+    if (!response.ok) {
+      throw new Error("LOCAL_PRINT_SERVER_ERROR");
     }
+
+    alert("COM5 프린터 테스트 출력 요청이 완료되었습니다.");
+  } catch (error) {
+    console.error("프린터 테스트 실패:", error);
+    alert(
+      "프린터 테스트에 실패했습니다.\n\n" +
+      "1. 키오스크 PC에서 print_server.ps1이 실행 중인지 확인\n" +
+      "2. COM5 프린터 전원 및 연결 상태 확인\n" +
+      "3. 크롬에서 http://127.0.0.1:8787/print?number=001 접속 테스트"
+    );
+  }
+}
 
     async function submitReservation(){
       const name = $('inputName').value.trim();
