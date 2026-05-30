@@ -925,7 +925,7 @@ async function printLocalTicket(ticket) {
   time: selectedTime,
   team: selectedTeam,
   count: currentCount,
-  agree: currentMode === "SURVIVAL" ? (isAgreeSrv ? "동의" : "비동의") : "",
+  agree: currentMode === "SURVIVAL" ? (isAgreeSrv ? "Y" : "N") : "",
   number: String(uniqueKey)
 });
 
