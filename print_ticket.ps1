@@ -39,6 +39,10 @@ if ([string]::IsNullOrWhiteSpace($count)) {
     $count = "-"
 }
 
+if ([string]::IsNullOrWhiteSpace($team)) {
+    $team = "-"
+}
+
 $port = New-Object System.IO.Ports.SerialPort
 $port.PortName = $portName
 $port.BaudRate = $baudRate
