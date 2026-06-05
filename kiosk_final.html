@@ -365,7 +365,7 @@
             <div class="zone-img" style="background-image: url('./vr_main.jpg');"></div>
             <div class="zone-info">
               <h2 class="zone-title">VR존</h2>
-              <p class="zone-desc">1시간 단위 예약제로 운영되는 VR 가상현실 체험 공간입니다. 정원 제한으로 더욱 쾌적하고 생생한 가상현실을 경험할 수 있습니다.</p>
+              <p class="zone-desc">30 단위 예약제로 운영되는 VR 가상현실 체험 공간입니다. 정원 제한으로 더욱 쾌적하고 생생한 가상현실을 경험할 수 있습니다.</p>
               <div class="zone-condition">신장 140cm 이상</div>
             </div>
           </div>
@@ -550,7 +550,6 @@
         $('timePageSubNotice').textContent = "※ 지금 예약 가능한 시간이 상단에 정렬되며, 경과된 타임은 마감됩니다.";
       } else {
         $('timePageMainTitle').textContent = "VR 체험존 예약 시간 선택";
-        $('timePageSubNotice').textContent = "※ 회차별 정원은 20명이며, 매 회차 시작 후 30분이 지나면 예약이 마감됩니다.";
       }
       buildTimeGrid();
       switchPage('page-time-select');
@@ -642,11 +641,11 @@
           const btnVr = document.createElement('button');
           if(totalVrBooked >= 20 || isTimeOver) {
             btnVr.className = "btn-team booked";
-            btnVr.textContent = isTimeOver ? `VR체험\n(시간경과)` : `VR체험 (${totalVrBooked}/20명)\n[정원마감]`;
+            btnVr.textContent = isTimeOver ? `VR체험\n(시간경과)` : `VR체험 (${totalVrBooked}/14명)\n[정원마감]`;
           } else {
             btnVr.className = "btn-team available vr-mode";
-            btnVr.textContent = `VR체험 (${totalVrBooked}/20명)\n예약 가능`;
-            btnVr.onclick = () => selectSlot(slot, '통합', 20 - totalVrBooked);
+            btnVr.textContent = `VR체험\n예약 가능`;
+            btnVr.onclick = () => selectSlot(slot, '통합', 14 - totalVrBooked);
           }
           teamBtnBox.appendChild(btnVr);
         }
@@ -1466,8 +1465,9 @@ if (currentMode === "SURVIVAL") {
       "15:40~16:00", "16:00~16:20", "16:20~16:40", "16:40~17:00", "17:00~17:20"
     ];
     const VR_SLOTS = [
-      "09:00~10:00", "10:00~11:00", "11:00~12:00",
-      "13:00~14:00", "14:00~15:00", "15:00~16:00", "16:00~17:00", "17:00~18:00"
+      "09:00~09:30", "09:30~10:00", "10:00~10:30", "10:30~11:00", "11:00~11:30",
+      "11:30~12:00", "13:00~13:30", "13:30~14:00", "14:00~14:30", "14:30~15:00",
+      "15:00~15:30", "15:30~16:00", "16:00~16:30", "16:30~17:00", "17:00~17:20"
     ];
 
     let currentMode = "SURVIVAL"; 
@@ -1556,7 +1556,7 @@ if (currentMode === "SURVIVAL") {
         $('timePageSubNotice').textContent = "※ 지금 예약 가능한 시간이 상단에 정렬되며, 경과된 타임은 마감됩니다.";
       } else {
         $('timePageMainTitle').textContent = "VR 체험존 예약 시간 선택";
-        $('timePageSubNotice').textContent = "※ 회차별 정원은 20명이며, 매 회차 시작 후 30분이 지나면 예약이 마감됩니다.";
+        $('timePageSubNotice').textContent = "※ 회차별 정원은 20명이며, 매 회차 시작 후 분이 지나면 예약이 마감됩니다.";
       }
       buildTimeGrid();
       switchPage('page-time-select');
@@ -1582,12 +1582,11 @@ if (currentMode === "SURVIVAL") {
             isTimeOver = true;
           }
         } else {
-          if (currentHour > slotHour) {
+          const closeTime = new Date();
+          closeTime.setHours(slotHour, slotMinute + 15, 0, 0);
+
+          if (now >= closeTime) {
             isTimeOver = true;
-          } else if (currentHour === slotHour) {
-            if (currentMinute >= 30) { 
-              isTimeOver = true; 
-            }
           }
         }
         return { slot, isTimeOver };
@@ -1646,13 +1645,13 @@ if (currentMode === "SURVIVAL") {
           });
 
           const btnVr = document.createElement('button');
-          if(totalVrBooked >= 20 || isTimeOver) {
+          if(totalVrBooked >= 14 || isTimeOver) {
             btnVr.className = "btn-team booked";
-            btnVr.textContent = isTimeOver ? `VR체험\n(시간경과)` : `VR체험 (${totalVrBooked}/20명)\n[정원마감]`;
+            btnVr.textContent = isTimeOver ? `VR체험\n(시간경과)` : `VR체험 (${totalVrBooked}/14명)\n[정원마감]`;
           } else {
             btnVr.className = "btn-team available vr-mode";
-            btnVr.textContent = `VR체험 (${totalVrBooked}/20명)\n예약 가능`;
-            btnVr.onclick = () => selectSlot(slot, '통합', 20 - totalVrBooked);
+            btnVr.textContent = `VR체험 (${totalVrBooked}/14명)\n예약 가능`;
+            btnVr.onclick = () => selectSlot(slot, '통합', 14 - totalVrBooked);
           }
           teamBtnBox.appendChild(btnVr);
         }
