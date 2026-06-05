@@ -39,10 +39,6 @@ if ([string]::IsNullOrWhiteSpace($count)) {
     $count = "-"
 }
 
-if ([string]::IsNullOrWhiteSpace($team)) {
-    $team = "-"
-}
-
 $port = New-Object System.IO.Ports.SerialPort
 $port.PortName = $portName
 $port.BaudRate = $baudRate
@@ -98,6 +94,10 @@ catch {
     Write-Host $_.Exception.Message
 }
 finally {
+    if ($port.IsOpen) {
+        $port.Close()
+    }
+}finally {
     if ($port.IsOpen) {
         $port.Close()
     }
