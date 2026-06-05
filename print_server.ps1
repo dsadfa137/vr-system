@@ -29,6 +29,11 @@ while ($listener.IsListening) {
             $team = $request.QueryString['team']
             $count = $request.QueryString['count']
             $agree = $request.QueryString['agree']
+            $name = $request.QueryString['name']
+
+            if ([string]::IsNullOrWhiteSpace($name)) {
+                $name = "-"
+            }
 
             if ([string]::IsNullOrWhiteSpace($number)) { $number = '001' }
             if ([string]::IsNullOrWhiteSpace($mode)) { $mode = 'VR' }
@@ -55,6 +60,7 @@ while ($listener.IsListening) {
                     '-ExecutionPolicy', 'Bypass',
                     '-File', $ticketScript,
                     '-mode', $mode,
+                    '-name', $name,
                     '-time', $time,
                     '-team', $team,
                     '-count', $count,
