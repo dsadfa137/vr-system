@@ -39,11 +39,11 @@ while ($listener.IsListening) {
             if ([string]::IsNullOrWhiteSpace($mode)) { $mode = 'VR' }
             if ([string]::IsNullOrWhiteSpace($time)) { $time = '-' }
             if ([string]::IsNullOrWhiteSpace($count)) { $count = '-' }
-            if ([string]::IsNullOrWhiteSpace($agree)) { $agree = '-' }
+            if ([string]::IsNullOrWhiteSpace($agree)) { $agree = '' }
 
             # VR은 팀 개념이 없으므로 team 값을 '-'로 보정
             # 이 처리를 하지 않으면 print_ticket.ps1 호출 시 -team 매개변수 누락 오류가 발생할 수 있음
-            if ([string]::IsNullOrWhiteSpace($team)) { $team = '-' }
+            if ([string]::IsNullOrWhiteSpace($team)) { $team = "" }
 
             Write-Host 'PRINT REQUEST'
             Write-Host ('mode=' + $mode)
