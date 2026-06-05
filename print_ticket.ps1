@@ -98,8 +98,4 @@ finally {
     if ($port.IsOpen) {
         $port.Close()
     }
-}finally {
-    if ($port.IsOpen) {
-        $port.Close()
-    }
 }
