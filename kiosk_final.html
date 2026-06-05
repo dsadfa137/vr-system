@@ -420,6 +420,13 @@
               <button class="btn-count" onclick="changeCount(1)">+</button>
             </div>
           </div>
+          <div class="form-group" id="heightCheckGroup">
+            <label id="heightCheckLabel">키 제한 확인</label>
+            <div class="toggle-group">
+              <button id="btn-height-ok" class="btn-toggle" onclick="setHeightOk(true)">이용 가능</button>
+              <button id="btn-height-no" class="btn-toggle" onclick="setHeightOk(false)">이용 불가</button>
+            </div>
+          </div>
           <div class="form-group" id="survivalToggleGroup">
             <label>타팀과 동시체험 동의 여부 (비동의 시 타팀 예약 차단)</label>
             <div class="toggle-group">
@@ -473,6 +480,7 @@
     let selectedTeam = ""; 
     let isAgreeSrv = true;
     let currentCount = 1;
+    let isHeightOk = false;
     let maxAllowedCount = 6;
     let serialPort = null; 
 
@@ -640,7 +648,7 @@
           });
 
           const btnVr = document.createElement('button');
-          if(totalVrBooked >= 20 || isTimeOver) {
+          if(totalVrBooked >= 14 || isTimeOver) {
             btnVr.className = "btn-team booked";
             btnVr.textContent = isTimeOver ? `VR체험\n(시간경과)` : `VR체험 (${totalVrBooked}/14명)\n[정원마감]`;
           } else {
@@ -663,6 +671,19 @@
       hangulBuffer = []; 
       $('inputName').value = "";
       $('textCount').textContent = currentCount;
+      isHeightOk = false;
+      $('btn-height-ok').className = "btn-toggle";
+      $('btn-height-no').className = "btn-toggle";
+
+      if(currentMode === "SURVIVAL") {
+        $('heightCheckLabel').textContent = "키 제한 확인 - 150cm 이상 이용 가능";
+        $('btn-height-ok').textContent = "150cm 이상";
+        $('btn-height-no').textContent = "150cm 미만";
+      } else {
+        $('heightCheckLabel').textContent = "키 제한 확인 - 140cm 이상 이용 가능";
+       $('btn-height-ok').textContent = "140cm 이상";
+        $('btn-height-no').textContent = "140cm 미만";
+      }
 
       if(currentMode === "SURVIVAL") {
         maxAllowedCount = remainSeats > 6 ? 6 : remainSeats;
@@ -674,7 +695,7 @@
         $('btn-agree-o').className = "btn-toggle active";
         $('btn-agree-x').className = "btn-toggle";
       } else {
-        maxAllowedCount = remainSeats > 20 ? 20 : remainSeats;
+        maxAllowedCount = remainSeats > 14 ? 14 : remainSeats;
         $('selectedSlotTitle').textContent = `${slot} VR체험존 예약`;
         $('selectedSlotTitle').style.color = "var(--vr)";
         $('btnSubmitForm').style.backgroundColor = "var(--vr)";
@@ -703,6 +724,17 @@
       } else {
         $('btn-agree-o').className = "btn-toggle";
         $('btn-agree-x').className = "btn-toggle active";
+      }
+    }
+    function setHeightOk(bool) {
+      isHeightOk = bool;
+
+      if(bool) {
+        $('btn-height-ok').className = "btn-toggle active";
+        $('btn-height-no').className = "btn-toggle";
+      } else {
+        $('btn-height-ok').className = "btn-toggle";
+        $('btn-height-no').className = "btn-toggle active";
       }
     }
 
@@ -869,6 +901,15 @@ async function printLocalTicket(ticket) {
       const name = $('inputName').value.trim();
       if(!name) {
         alert("대표자 성명을 입력해 주세요.");
+        return;
+      }
+      
+      if(!isHeightOk) {
+        if(currentMode === "SURVIVAL") {
+          alert("레이저 서바이벌은 신장 150cm 이상만 이용 가능합니다.\n키 제한 확인 후 예약해 주세요.");
+        } else {
+          alert("VR체험존은 신장 140cm 이상만 이용 가능합니다.\n키 제한 확인 후 예약해 주세요.");
+        }
         return;
       }
 
@@ -1426,6 +1467,13 @@ if (currentMode === "SURVIVAL") {
               <button class="btn-count" onclick="changeCount(1)">+</button>
             </div>
           </div>
+          <div class="form-group" id="heightCheckGroup">
+              <label id="heightCheckLabel">키 제한 확인</label>
+              <div class="toggle-group">
+                <button id="btn-height-ok" class="btn-toggle" onclick="setHeightOk(true)">이용 가능</button>
+                <button id="btn-height-no" class="btn-toggle" onclick="setHeightOk(false)">이용 불가</button>
+              </div>
+            </div>
           <div class="form-group" id="survivalToggleGroup">
             <label>타팀과 동시체험 동의 여부 (비동의 시 타팀 예약 차단)</label>
             <div class="toggle-group">
@@ -1479,6 +1527,7 @@ if (currentMode === "SURVIVAL") {
     let selectedTeam = ""; 
     let isAgreeSrv = true;
     let currentCount = 1;
+    let isHeightOk = false;
     let maxAllowedCount = 6;
     let serialPort = null; 
 
@@ -1710,6 +1759,18 @@ if (currentMode === "SURVIVAL") {
         $('btn-agree-x').className = "btn-toggle active";
       }
     }
+
+    function setHeightOk(bool) {
+  isHeightOk = bool;
+
+  if(bool) {
+    $('btn-height-ok').className = "btn-toggle active";
+    $('btn-height-no').className = "btn-toggle";
+  } else {
+    $('btn-height-ok').className = "btn-toggle";
+    $('btn-height-no').className = "btn-toggle active";
+  }
+}
 
     function openNativeKeyboard() {
       $('inputName').style.borderColor = currentMode === "SURVIVAL" ? 'var(--survival)' : 'var(--vr)';
