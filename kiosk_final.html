@@ -877,6 +877,7 @@
 async function printLocalTicket(ticket) {
   try {
     const params = new URLSearchParams({
+      service: ticket.mode || "",
       mode: ticket.mode || "",
       time: ticket.time || "",
       team: ticket.team || "",
@@ -884,7 +885,6 @@ async function printLocalTicket(ticket) {
       agree: ticket.agree || "",
       number: ticket.number || ""
     });
-
     const response = await fetch("http://127.0.0.1:8787/print?" + params.toString());
 
     if (!response.ok) {
@@ -967,14 +967,13 @@ if (currentMode === "SURVIVAL") {
       renderDashboard();
 
       const isPrinted = await printLocalTicket({
-  mode: currentMode,
-  time: selectedTime,
-  team: currentMode === "SURVIVAL" ? selectedTeam : "",
-  count: String(currentCount),
-  agree: currentMode === "SURVIVAL" ? (isAgreeSrv ? "Y" : "N") : "",
-  number: ticketNumber
-});
-
+        mode: currentMode,
+        time: selectedTime,
+        team: currentMode === "SURVIVAL" ? selectedTeam : "VR",
+        count: String(currentCount),
+        agree: currentMode === "SURVIVAL" ? (isAgreeSrv ? "Y" : "N") : "",
+        number: ticketNumber
+      });
       if (isPrinted) {
         alert("예약 신청 및 대기 번호표 출력이 완료되었습니다!");
         goHome();
@@ -1911,8 +1910,8 @@ if (currentMode === "SURVIVAL") {
 async function printLocalTicket(ticket) {
   try {
     const params = new URLSearchParams({
+      service: ticket.mode || "",
       mode: ticket.mode || "",
-      name: ticket.name || "",
       time: ticket.time || "",
       team: ticket.team || "",
       count: ticket.count || "",
@@ -1986,15 +1985,13 @@ async function printLocalTicket(ticket) {
       renderDashboard();
 
       const isPrinted = await printLocalTicket({
-  mode: currentMode,
-  name: name,
-  time: selectedTime,
-  team: selectedTeam,
-  count: currentCount,
-  agree: currentMode === "SURVIVAL" ? (isAgreeSrv ? "Y" : "N") : "",
-  number: String(uniqueKey)
-});
-
+        mode: currentMode,
+        time: selectedTime,
+        team: currentMode === "SURVIVAL" ? selectedTeam : "VR",
+        count: String(currentCount),
+        agree: currentMode === "SURVIVAL" ? (isAgreeSrv ? "Y" : "N") : "",
+        number: ticketNumber
+      });
       if (isPrinted) {
         alert("예약 신청 및 대기 번호표 출력이 완료되었습니다!");
         goHome();
