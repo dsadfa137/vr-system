@@ -57,10 +57,10 @@ while ($listener.IsListening) {
 
             if (Test-Path $ticketScript) {
                 $argList = @(
+                    '-NoProfile',
                     '-ExecutionPolicy', 'Bypass',
                     '-File', $ticketScript,
                     '-mode', $mode,
-                    '-name', $name,
                     '-time', $time,
                     '-team', $team,
                     '-count', $count,
