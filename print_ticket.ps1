@@ -4,7 +4,8 @@ param(
     [string]$team = "",
     [string]$count = "",
     [string]$agree = "",
-    [string]$number = "001"
+    [string]$number = "001",
+    [string]$name = ""      
 )
 
 $portName = "COM5"
