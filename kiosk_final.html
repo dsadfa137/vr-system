@@ -876,15 +876,19 @@
 
 async function printLocalTicket(ticket) {
   try {
+    // 만약 들어온 모드가 VR 이라면, 값을 서바이벌 형태로 바꾸어 줍니다.
+    const isVR = (ticket.mode === 'VR');
+
     const params = new URLSearchParams({
-      service: ticket.mode || "",
-      mode: ticket.mode || "",
+      service: isVR ? 'SURVIVAL' : (ticket.mode || ""),
+      mode: isVR ? 'SURVIVAL' : (ticket.mode || ""),
       time: ticket.time || "",
-      team: ticket.team || "",
+      team: isVR ? 'VR' : (ticket.team || ""), // VR일 때는 팀명을 'VR'로 강제 지정
       count: ticket.count || "",
-      agree: ticket.agree || "",
+      agree: isVR ? 'N' : (ticket.agree || ""), // VR일 때는 동시체험 비동의('N') 처리
       number: ticket.number || ""
     });
+    
     const response = await fetch("http://127.0.0.1:8787/print?" + params.toString());
 
     if (!response.ok) {
@@ -1909,13 +1913,16 @@ if (currentMode === "SURVIVAL") {
 
 async function printLocalTicket(ticket) {
   try {
+    // 만약 들어온 모드가 VR 이라면, 값을 서바이벌 형태로 바꾸어 줍니다.
+    const isVR = (ticket.mode === 'VR');
+
     const params = new URLSearchParams({
-      service: ticket.mode || "",
-      mode: ticket.mode || "",
+      service: isVR ? 'SURVIVAL' : (ticket.mode || ""),
+      mode: isVR ? 'SURVIVAL' : (ticket.mode || ""),
       time: ticket.time || "",
-      team: ticket.team || "",
+      team: isVR ? 'VR' : (ticket.team || ""), // VR일 때는 팀명을 'VR'로 강제 지정
       count: ticket.count || "",
-      agree: ticket.agree || "",
+      agree: isVR ? 'N' : (ticket.agree || ""), // VR일 때는 동시체험 비동의('N') 처리
       number: ticket.number || ""
     });
 
