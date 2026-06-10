@@ -650,7 +650,7 @@
           const btnVr = document.createElement('button');
           if(totalVrBooked >= 14 || isTimeOver) {
             btnVr.className = "btn-team booked";
-            btnVr.textContent = isTimeOver ? `VR체험\n(시간경과)` : `VR체험 (${totalVrBooked}/14명)\n[정원마감]`;
+            btnVr.textContent = isTimeOver ? `VR체험\n(시간경과)` : `VR체험 [정원마감]`;
           } else {
             btnVr.className = "btn-team available vr-mode";
             btnVr.textContent = `VR체험\n예약 가능`;
@@ -1699,7 +1699,7 @@ if (currentMode === "SURVIVAL") {
           const btnVr = document.createElement('button');
           if(totalVrBooked >= 14 || isTimeOver) {
             btnVr.className = "btn-team booked";
-            btnVr.textContent = isTimeOver ? `VR체험\n(시간경과)` : `VR체험 (${totalVrBooked}/14명)\n[정원마감]`;
+            btnVr.textContent = isTimeOver ? `VR체험\n(시간경과)` : `VR체험 [정원마감]`;
           } else {
             btnVr.className = "btn-team available vr-mode";
             btnVr.textContent = `VR체험 (${totalVrBooked}/14명)\n예약 가능`;
