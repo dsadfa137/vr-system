@@ -408,7 +408,7 @@
         <h2 class="page-title" id="selectedSlotTitle">예약 신청</h2>
         
         <div class="form-container">
-          <div class="form-group">
+          <div class="form-group" id="nameInputGroup" style="display:none;">
             <label>대표자 성명</label>
             <input type="text" id="inputName" class="form-control" placeholder="성명을 입력하세요" readonly>
           </div>
@@ -702,7 +702,7 @@
       }
 
       switchPage('page-form-input');
-      openNativeKeyboard();
+      // openNativeKeyboard();
     }
 
     function changeCount(val) {
@@ -902,10 +902,14 @@ async function printLocalTicket(ticket) {
 }
     async function submitReservation(){
       const name = $('inputName').value.trim();
+
+      // 이름 입력 기능을 다시 사용할 때 아래 검사를 복원합니다.
+      /*
       if(!name) {
         alert("대표자 성명을 입력해 주세요.");
         return;
       }
+      */
       
       if(!isHeightOk) {
         if(currentMode === "SURVIVAL") {
@@ -1457,7 +1461,7 @@ if (currentMode === "SURVIVAL") {
         <h2 class="page-title" id="selectedSlotTitle">예약 신청</h2>
         
         <div class="form-container">
-          <div class="form-group">
+          <div class="form-group" id="nameInputGroup" style="display:none;">
             <label>대표자 성명</label>
             <input type="text" id="inputName" class="form-control" placeholder="성명을 입력하세요" readonly>
           </div>
@@ -1737,7 +1741,7 @@ if (currentMode === "SURVIVAL") {
       }
 
       switchPage('page-form-input');
-      openNativeKeyboard();
+      // openNativeKeyboard();
     }
 
     function changeCount(val) {
